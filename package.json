@@ -1,0 +1,35 @@
+{
+  "name": "ai-text-platform",
+  "version": "1.0.0",
+  "description": "AI Text Processing Platform - Monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\" \"npm run dev:ml\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:ml": "cd ml-service && python run.py",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start:backend": "cd backend && npm start",
+    "start:ml": "cd ml-service && python run.py",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install && cd ../ml-service && pip install -r requirements.txt",
+    "clean": "rm -rf frontend/node_modules backend/node_modules ml-service/venv"
+  },
+  "keywords": [
+    "ai",
+    "text-processing",
+    "monorepo",
+    "nextjs",
+    "nodejs",
+    "fastapi"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,19 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+
+# NLP Libraries
+transformers
+torch
+sentence-transformers
+scikit-learn
+nltk>
+
+# Grammar Checking
+language-tool-python
+
+# Additional utilities
+numpy
+scipy
+python-dotenv
