@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2 } from "lucide-react"
+import { Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguages } from "@/hooks/use-languages"
 import api from "@/lib/api"
@@ -91,7 +92,7 @@ export default function GrammarPage() {
         title: "❌ Error",
         description: errorMessage,
         className: "border-red-200 bg-transparent text-red-800",
-      })
+        })
     } finally {
       setIsLoading(false)
     }
@@ -169,7 +170,23 @@ export default function GrammarPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              <div className="relative transition-opacity duration-300">
               <Textarea value={outputText} readOnly className="min-h-64 resize-none bg-muted" />
+                {outputText && (
+                  <div className="absolute top-3 right-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(outputText)
+                        toast({ title: "Copied", description: "Corrected text copied to clipboard", className: "border-blue-200 bg-transparent text-blue-800" })
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               {issues.length > 0 && (
                 <div className="space-y-2">

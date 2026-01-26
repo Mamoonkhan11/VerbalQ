@@ -1,16 +1,16 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Eye, EyeOff, ArrowLeft, UserPlus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import api from "@/lib/api"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -21,12 +21,18 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const passwordRef = useRef<HTMLInputElement | null>(null)
+  const confirmPasswordRef = useRef<HTMLInputElement | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,42 +40,19 @@ export default function RegisterPage() {
     setError(null)
 
     // Client-side validation
-    if (!formData.name.trim()) {
-      setError("Full name is required")
-      return
-    }
-
-    if (formData.name.trim().length < 2) {
-      setError("Full name must be at least 2 characters")
-      return
-    }
-
-    if (!formData.email.trim()) {
-      setError("Email is required")
-      return
-    }
-
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      setError("Please enter a valid email address")
-      return
-    }
+    const newFieldErrors: { [key: string]: string } = {}
 
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      return
-    }
+    if (!formData.name.trim()) newFieldErrors.name = "Full name is required"
+    if (!formData.email.trim()) newFieldErrors.email = "Email is required"
+    else if (!emailRegex.test(formData.email)) newFieldErrors.email = "Invalid email format"
 
-    // Validate password strength
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long")
-      return
-    }
+    if (formData.password.length < 6) newFieldErrors.password = "Min 6 characters"
+    if (formData.password !== formData.confirmPassword) newFieldErrors.confirmPassword = "Passwords match error"
 
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      setError("Password must contain at least one uppercase letter, one lowercase letter, and one number")
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors)
+      setError("Please fix the errors below")
       return
     }
 
@@ -80,200 +63,215 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-        name: formData.name.trim(),
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password,
+          name: formData.name.trim(),
+          email: formData.email.toLowerCase().trim(),
+          password: formData.password,
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        let errorMessage = "Registration failed. Please try again."
-
-        if (response.status === 400) {
-          errorMessage = data?.message || "Please check your information and try again."
-        } else if (response.status === 409) {
-          errorMessage = "An account with this email already exists."
-        } else if (data?.message) {
-          errorMessage = data.message
-        }
-
-        setError(errorMessage)
+        setError(data?.message || "Registration failed")
         return
       }
 
-      // Show success message
       toast({
-        title: "✅ Registration Successful",
-        description: "Your account has been created successfully. You can now sign in.",
-        className: "border-green-200 bg-transparent text-green-800",
+        title: "✅ Account Created",
+        description: "Welcome to VerbalQ! Redirecting to login...",
+        className: "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200",
       })
 
-      // Clear form
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      })
-
-      // Redirect to login after a short delay to show the toast
       setTimeout(() => {
         router.push("/login")
       }, 1500)
 
     } catch (err: any) {
-      let errorMessage = "Registration failed. Please try again."
-      setError(errorMessage)
-      console.error("Registration error:", err)
+      setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
-            <span className="text-white font-bold text-xl">VQ</span>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 p-6">
+      <div className="w-full max-w-lg">
+        {/* Back to Login */}
+        <Link 
+          href="/login" 
+          className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 mb-8 transition-colors group"
+        >
+          <div className="mr-2 p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+          Back to login
+        </Link>
+
+        {/* Logo & Header */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-3xl mb-6 shadow-xl ring-4 ring-white dark:ring-slate-900 -rotate-3 hover:rotate-0 transition-transform duration-300">
+            <UserPlus className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3">
             Join VerbalQ
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Create your account to get started
+          <p className="text-slate-500 dark:text-slate-400 text-lg">
+            Create your account to start improving your writing
           </p>
         </div>
 
-        <Card className="border-0 shadow-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-2xl font-semibold text-center">Create Account</CardTitle>
-            <CardDescription className="text-center">
-              Sign up to start using VerbalQ's AI tools
-            </CardDescription>
-        </CardHeader>
+        <Card className="border-slate-200/60 dark:border-slate-800/60 shadow-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl overflow-hidden rounded-3xl">
+          <div className="h-2 bg-gradient-to-r from-blue-600 to-indigo-600" />
+          <CardHeader className="space-y-1 pb-2 pt-8">
+            <CardTitle className="text-2xl font-bold text-center text-slate-900 dark:text-white">Create Account</CardTitle>
+          </CardHeader>
 
-          <CardContent className="space-y-6">
+          <CardContent className="p-8 pt-6 space-y-6">
             <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-                <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-950">
-                  <AlertDescription className="text-red-800 dark:text-red-200">
+              {error && (
+                <Alert variant="destructive" className="rounded-2xl border-red-200/50 bg-red-50/50 dark:bg-red-950/20">
+                  <AlertDescription className="text-red-800 dark:text-red-200 font-medium">
                     {error}
                   </AlertDescription>
-              </Alert>
-            )}
+                </Alert>
+              )}
 
-            <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                   Full Name
                 </Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                  placeholder="Enter your full name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                disabled={isLoading}
-                  className="h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-800"
-              />
-            </div>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isLoading}
+                  className="h-12 px-4 rounded-2xl border-slate-200 dark:border-slate-800 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-950 transition-all text-base"
+                />
+                {fieldErrors.name && <p className="text-xs text-red-500 ml-1">{fieldErrors.name}</p>}
+              </div>
 
-            <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                   Email Address
                 </Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                  placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                disabled={isLoading}
-                  className="h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-800"
-              />
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Password
-                </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                  placeholder="Create a strong password"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                disabled={isLoading}
-                  className="h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-800"
-              />
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                Must contain uppercase, lowercase, and number
-              </p>
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Confirm Password
-                </Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                  placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                required
-                disabled={isLoading}
-                  className="h-12 border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-800"
-              />
-            </div>
-
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Creating account...
-                  </div>
-                ) : (
-                  "Create Account"
-                )}
-            </Button>
-          </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isLoading}
+                  className="h-12 px-4 rounded-2xl border-slate-200 dark:border-slate-800 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-950 transition-all text-base"
+                />
+                {fieldErrors.email && <p className="text-xs text-red-500 ml-1">{fieldErrors.email}</p>}
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-                  Already have an account?
-                </span>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      ref={passwordRef}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                      className="h-12 px-4 rounded-2xl border-slate-200 dark:border-slate-800 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-950 transition-all text-base pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {fieldErrors.password && <p className="text-xs text-red-500 ml-1">{fieldErrors.password}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                    Confirm
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      ref={confirmPasswordRef}
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
+                      className="h-12 px-4 rounded-2xl border-slate-200 dark:border-slate-800 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-950 transition-all text-base pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {fieldErrors.confirmPassword && <p className="text-xs text-red-500 ml-1">{fieldErrors.confirmPassword}</p>}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg rounded-2xl shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-70 disabled:translate-y-0"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Creating Account...</span>
+                    </div>
+                  ) : (
+                    "Create Free Account"
+                  )}
+                </Button>
+              </div>
+            </form>
+
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-100 dark:border-slate-800"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+                <span className="px-4 bg-white dark:bg-slate-900 text-slate-400">Already a member?</span>
               </div>
             </div>
 
             <div className="text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center w-full h-12 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center justify-center w-full h-12 border-2 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
               >
-                Sign In Instead
+                Sign In to Your Account
               </Link>
+            </div>
+          </CardContent>
+          
+          <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-[10px] text-slate-400 text-center uppercase tracking-widest leading-relaxed">
+              By creating an account, you agree to our <span className="text-slate-900 dark:text-slate-200 font-bold">Terms of Service</span> and <span className="text-slate-900 dark:text-slate-200 font-bold">Privacy Policy</span>.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
       </div>
     </div>
   )

@@ -67,19 +67,12 @@ class AIController {
     } catch (error) {
       console.error('Grammar check error:', error.message);
 
-      // Handle ML service unavailability
-      if (error.status === 503 || error.message.includes('ML service')) {
-        return res.status(503).json({
-          error: 'ML_SERVICE_UNAVAILABLE',
-          message: 'AI service is temporarily unavailable. Please try again later.'
-        });
-      }
-
-      // Handle language not supported
-      if (error.message.includes('LANGUAGE_NOT_SUPPORTED')) {
-        return res.status(400).json({
-          error: 'LANGUAGE_NOT_SUPPORTED',
-          message: 'The selected language is not supported for grammar checking.'
+      // Handle specific ML service errors
+      if (error.status) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.data?.detail?.error || 'GRAMMAR_ERROR',
+          message: error.message
         });
       }
 
@@ -163,19 +156,13 @@ class AIController {
     } catch (error) {
       console.error('Translation error:', error.message);
 
-      // Handle ML service unavailability
-      if (error.status === 503 || error.message.includes('ML service')) {
-        return res.status(503).json({
-          error: 'ML_SERVICE_UNAVAILABLE',
-          message: 'AI service is temporarily unavailable. Please try again later.'
-        });
-      }
-
-      // Handle language not supported
-      if (error.message.includes('LANGUAGE_NOT_SUPPORTED')) {
-        return res.status(400).json({
-          error: 'LANGUAGE_NOT_SUPPORTED',
-          message: 'One or both of the selected languages are not supported for translation.'
+      // Handle specific ML service errors
+      if (error.status) {
+        const errorData = error.data?.detail || {};
+        return res.status(error.status).json({
+          success: false,
+          error: errorData.error || 'TRANSLATION_ERROR',
+          message: error.message
         });
       }
 
@@ -253,19 +240,12 @@ class AIController {
     } catch (error) {
       console.error('Humanization error:', error.message);
 
-      // Handle ML service unavailability
-      if (error.status === 503 || error.message.includes('ML service')) {
-        return res.status(503).json({
-          error: 'ML_SERVICE_UNAVAILABLE',
-          message: 'AI service is temporarily unavailable. Please try again later.'
-        });
-      }
-
-      // Handle language not supported
-      if (error.message.includes('LANGUAGE_NOT_SUPPORTED')) {
-        return res.status(400).json({
-          error: 'LANGUAGE_NOT_SUPPORTED',
-          message: 'The selected language is not supported for text humanization.'
+      // Handle specific ML service errors
+      if (error.status) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.data?.detail?.error || 'HUMANIZE_ERROR',
+          message: error.message
         });
       }
 
@@ -344,19 +324,12 @@ class AIController {
     } catch (error) {
       console.error('Plagiarism check error:', error.message);
 
-      // Handle ML service unavailability
-      if (error.status === 503 || error.message.includes('ML service')) {
-        return res.status(503).json({
-          error: 'ML_SERVICE_UNAVAILABLE',
-          message: 'AI service is temporarily unavailable. Please try again later.'
-        });
-      }
-
-      // Handle language not supported
-      if (error.message.includes('LANGUAGE_NOT_SUPPORTED')) {
-        return res.status(400).json({
-          error: 'LANGUAGE_NOT_SUPPORTED',
-          message: 'The selected language is not supported for plagiarism checking.'
+      // Handle specific ML service errors
+      if (error.status) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.data?.detail?.error || 'PLAGIARISM_ERROR',
+          message: error.message
         });
       }
 
@@ -364,6 +337,26 @@ class AIController {
       return res.status(500).json({
         success: false,
         message: 'An error occurred while processing your request.'
+      });
+    }
+  });
+
+  /**
+   * Get supported translation languages
+   * GET /api/ai/languages/translation
+   */
+  getTranslationLanguages = asyncHandler(async (req, res) => {
+    try {
+      const mlClient = getMLClient();
+      const mlData = await mlClient.client.get('/translate/languages');
+      
+      res.json(mlData.data);
+    } catch (error) {
+      console.error('Failed to fetch translation languages:', error.message);
+      // Fallback if ML service is down
+      res.status(503).json({
+        success: false,
+        message: 'Translation service language list is temporarily unavailable'
       });
     }
   });

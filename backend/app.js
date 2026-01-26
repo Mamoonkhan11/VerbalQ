@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const aiRoutes = require('./routes/ai');
 const historyRoutes = require('./routes/history');
 const adminRoutes = require('./routes/admin');
+const feedbackRoutes = require('./routes/feedback');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -95,6 +96,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // 404 handler for undefined routes
 app.all('*', (req, res) => {

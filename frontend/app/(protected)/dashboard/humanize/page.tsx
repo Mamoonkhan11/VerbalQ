@@ -110,7 +110,7 @@ export default function HumanizePage() {
         title: "❌ Humanization Failed",
         description: errorMessage,
         className: "border-red-200 bg-transparent text-red-800",
-      })
+        })
     } finally {
       setIsLoading(false)
     }

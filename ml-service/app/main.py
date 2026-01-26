@@ -11,6 +11,11 @@ This application provides REST endpoints for various NLP operations:
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import time
+import os
+
+# Disable Hugging Face symlinks warning on Windows
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+
 from .routers import grammar, translation, humanize, plagiarism
 from .models.schemas import HealthResponse
 

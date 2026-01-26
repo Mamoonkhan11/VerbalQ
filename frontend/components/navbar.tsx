@@ -18,6 +18,9 @@ export default function Navbar() {
               <span className="font-bold text-xl bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                 VerbalQ
               </span>
+              <span className="hidden lg:block text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-1">
+                by vionys
+              </span>
             </Link>
           </div>
 

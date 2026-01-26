@@ -38,6 +38,13 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // Handle blocked user errors (403)
+    if (status === 403 && error.response?.data && (error.response.data as any).message?.includes('blocked')) {
+      localStorage.removeItem('auth_token');
+      window.location.href = '/login?error=blocked';
+      return Promise.reject(error);
+    }
+
     // Handle rate limiting and server errors silently
     // Errors will be handled by the calling components with toast messages
 

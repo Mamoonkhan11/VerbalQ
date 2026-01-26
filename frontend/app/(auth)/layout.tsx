@@ -35,7 +35,7 @@ export default function AuthLayout({
               >
                 <Shield className="w-4 h-4" />
                 <span className="hidden sm:inline">Admin Login</span>
-              </Link>
+            </Link>
             </div>
           </div>
         </div>

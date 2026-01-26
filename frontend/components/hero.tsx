@@ -38,10 +38,15 @@ export default function Hero() {
                   with VerbalQ
                 </span>
               </h1>
+              <p className="text-sm font-bold text-blue-600/80 uppercase tracking-widest mb-1">
+                Powered by vionys
+              </p>
+              <h2 className="text-xl font-medium text-slate-500 dark:text-slate-400 max-w-lg italic">
+                "Bridging obstacles in technology"
+              </h2>
 
-              <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-lg">
-                Experience the future of text processing with our AI-powered tools for grammar correction,
-                translation, humanization, and plagiarism detection across multiple languages.
+              <p className="text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-lg mt-4">
+                Our platform aims to bridge obstacles in technology with AI-powered tools for writing, translation, and detection.
               </p>
             </div>
 
@@ -83,7 +88,7 @@ export default function Hero() {
                 <Link href="/learn-more">
                   Learn More
                 </Link>
-              </Button>
+            </Button>
             </div>
 
             {/* Trust Indicators */}

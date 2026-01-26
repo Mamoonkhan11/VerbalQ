@@ -77,6 +77,44 @@ export default function HistoryPage() {
     }
   }
 
+  const handleDeleteEntry = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this entry?")) return
+
+    try {
+      await api.delete(`/api/history/${id}`)
+      setHistory(history.filter((entry) => entry._id !== id))
+      toast({
+        title: "Entry deleted",
+        description: "The history entry has been removed.",
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: err.response?.data?.message || "Failed to delete entry",
+      })
+    }
+  }
+
+  const handleClearHistory = async () => {
+    if (!confirm("Are you sure you want to clear ALL history? This cannot be undone.")) return
+
+    try {
+      await api.delete("/api/history/clear")
+      setHistory([])
+      toast({
+        title: "History cleared",
+        description: "Your entire activity history has been deleted.",
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Clear failed",
+        description: err.response?.data?.message || "Failed to clear history",
+      })
+    }
+  }
+
   const truncateText = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + "..."
@@ -95,9 +133,16 @@ export default function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Activity History</h1>
-        <p className="text-muted-foreground">View your text processing history</p>
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Activity History</h1>
+          <p className="text-muted-foreground">View your text processing history</p>
+        </div>
+        {history.length > 0 && (
+          <Button variant="destructive" size="sm" onClick={handleClearHistory}>
+            Clear All History
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -124,10 +169,9 @@ export default function HistoryPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Action Type</TableHead>
-                    <TableHead>Input Preview</TableHead>
-                    <TableHead>Output Preview</TableHead>
+                    <TableHead>Tool Used</TableHead>
                     <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -135,16 +179,20 @@ export default function HistoryPage() {
                   {history.map((entry) => (
                     <TableRow key={entry._id}>
                       <TableCell className="font-medium">{getActionTypeLabel(entry.actionType)}</TableCell>
-                      <TableCell className="max-w-xs truncate text-muted-foreground" title={entry.inputText}>
-                        {truncateText(entry.inputText)}
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(entry.createdAt), "MMM dd, yyyy")}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate text-muted-foreground" title={entry.outputText}>
-                        {truncateText(entry.outputText)}
+                      <TableCell className="text-sm text-muted-foreground">
+                        {format(new Date(entry.createdAt), "HH:mm:ss")}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatDate(entry.createdAt)}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="outline" size="sm">
-                          View Details
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDeleteEntry(entry._id)}
+                        >
+                          Delete
                         </Button>
                       </TableCell>
                     </TableRow>

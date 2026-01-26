@@ -21,6 +21,7 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
+    role?: "user" | "admin"
   ) => Promise<
     | { success: true; role: "user" | "admin" }
     | { success: false; error: string }
@@ -65,12 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData: User = responseData?.user
         
         if (userData) {
-          setUser({
-            userId: userData.id,
-            email: userData.email,
-            name: userData.name,
-            role: userData.role
-          })
+        setUser({
+          userId: userData.id,
+          email: userData.email,
+          name: userData.name,
+          role: userData.role
+        })
         }
       } catch (error) {
         console.error("Auth check failed:", error)
@@ -83,15 +84,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, role?: "user" | "admin") => {
     try {
       // IMPORTANT:
       // Use Next.js route `/api/auth/login` (relative URL) so it can set the httpOnly cookie `auth_token`.
       // If we call the backend via Axios baseURL, the cookie never gets set for the Next.js app,
       // and middleware will block `/dashboard`.
       
-      const loginData = { email: email.trim(), password: password.trim() }
-      console.log("Sending login request:", { email: loginData.email, password: loginData.password ? "***" : "empty" })
+      const loginData = { email: email.trim(), password: password.trim(), requiredRole: role }
+      console.log("Sending login request:", { email: loginData.email, requiredRole: role })
       
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -105,7 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         data = await response.json()
       } catch (jsonError) {
         return {
-          success: false,
+          success: false as const,
           error: `Server error: ${response.status} ${response.statusText}`,
         }
       }
@@ -115,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // HTTP error status (401, 400, 500, etc.)
         const errorMsg = data?.error || data?.message || `Login failed: ${response.status} ${response.statusText}`
         return {
-          success: false,
+          success: false as const,
           error: errorMsg,
         }
       }
@@ -124,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!data?.success) {
         const errorMsg = data?.error || data?.message || "Login failed. Please try again."
         return {
-          success: false,
+          success: false as const,
           error: errorMsg,
         }
       }
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = data?.user
 
       if (!token || !userData) {
-        return { success: false, error: "Invalid response from server. Please try again." }
+        return { success: false as const, error: "Invalid response from server. Please try again." }
       }
 
       // Store token (client-side convenience). Cookie is set server-side by the Next route.
@@ -146,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: userData.role,
       })
 
-      return { success: true, role: userData.role }
+      return { success: true as const, role: userData.role as "user" | "admin" }
     } catch (error: any) {
       // Handle fetch errors (network errors, etc.)
       let errorMessage = 'Login failed. Please try again.'
@@ -158,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       return {
-        success: false,
+        success: false as const,
         error: errorMessage
       }
     }

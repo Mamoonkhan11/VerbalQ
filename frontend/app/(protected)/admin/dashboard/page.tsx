@@ -77,8 +77,11 @@ export default function AdminDashboardPage() {
   }, [])
 
   const handleBlockUser = async (userId: string, currentBlockedStatus: boolean) => {
+    const action = currentBlockedStatus ? 'unblock' : 'block'
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return
+
     try {
-      await api.put(`/api/admin/block/${userId}`)
+      await api.patch(`/api/admin/block/${userId}`)
       setUsers(users.map(u =>
         u._id === userId ? { ...u, isBlocked: !currentBlockedStatus } : u
       ))
@@ -103,6 +106,18 @@ export default function AdminDashboardPage() {
     { name: "Humanize", value: stats?.requestsByType.humanize || 0 },
     { name: "Plagiarism", value: stats?.requestsByType.plagiarism || 0 },
   ]
+  // Safely compute most used feature, guarding against undefined requestsByType
+  const mostUsed = (() => {
+    const req = stats?.requestsByType
+    if (!req) return "None"
+    const keys = Object.keys(req)
+    if (keys.length === 0) return "None"
+    return keys.reduce((a, b) => {
+      const va = req[a as keyof typeof req] || 0
+      const vb = req[b as keyof typeof req] || 0
+      return va > vb ? a : b
+    }, keys[0])
+  })()
 
   return (
     <AdminRoute>
@@ -185,10 +200,7 @@ export default function AdminDashboardPage() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">
-                    {stats ? Object.keys(stats.requestsByType).reduce((a, b) =>
-                      stats.requestsByType[a as keyof typeof stats.requestsByType] >
-                      stats.requestsByType[b as keyof typeof stats.requestsByType] ? a : b, "grammar"
-                    ) : "None"}
+                    {mostUsed}
                   </div>
                   <p className="text-xs text-muted-foreground">Popular feature</p>
                 </>
@@ -256,31 +268,31 @@ export default function AdminDashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user._id}>
-                        <TableCell className="font-medium">{user.name || "N/A"}</TableCell>
-                        <TableCell>{user.email}</TableCell>
+                {users.map((u) => (
+                      <TableRow key={u._id}>
+                        <TableCell className="font-medium">{u.name || "N/A"}</TableCell>
+                        <TableCell>{u.email}</TableCell>
                         <TableCell>
-                          <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                            {user.role}
+                          <Badge variant={u.role === "admin" ? "default" : "secondary"}>
+                            {u.role}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={user.isBlocked ? "destructive" : "outline"}>
-                            {user.isBlocked ? "Blocked" : "Active"}
+                          <Badge variant={u.isBlocked ? "destructive" : "outline"}>
+                            {u.isBlocked ? "Blocked" : "Active"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(user.createdAt), "MMM dd, yyyy")}
+                          {format(new Date(u.createdAt), "MMM dd, yyyy")}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleBlockUser(user._id, user.isBlocked)}
-                            disabled={user.role === "admin"} // Prevent blocking admins
+                            onClick={() => handleBlockUser(u._id, u.isBlocked)}
+                            disabled={u.role === "admin"} // Prevent blocking admins
                           >
-                            {user.isBlocked ? (
+                            {u.isBlocked ? (
                               <>
                                 <CheckCircle className="mr-1 h-3 w-3" />
                                 Unblock

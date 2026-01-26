@@ -46,6 +46,44 @@ class HistoryController {
       }
     });
   });
+
+  /**
+   * Delete a single history entry
+   * DELETE /api/history/:id
+   */
+  deleteEntry = asyncHandler(async (req, res) => {
+    const historyEntry = await History.findOne({
+      _id: req.params.id,
+      userId: req.user._id
+    });
+
+    if (!historyEntry) {
+      return res.status(404).json({
+        success: false,
+        message: 'History entry not found'
+      });
+    }
+
+    await historyEntry.deleteOne();
+
+    res.json({
+      success: true,
+      message: 'History entry deleted successfully'
+    });
+  });
+
+  /**
+   * Clear all user history
+   * DELETE /api/history/clear
+   */
+  clearMyHistory = asyncHandler(async (req, res) => {
+    await History.deleteMany({ userId: req.user._id });
+
+    res.json({
+      success: true,
+      message: 'All history cleared successfully'
+    });
+  });
 }
 
 module.exports = new HistoryController();

@@ -38,14 +38,31 @@ class MLClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        console.error(`ML Service Error (${error.config?.url}):`, error.message);
-
-        // Enhance error with ML service context for 503 responses
-        const mlError = new Error(`ML service unavailable: ${error.message}`);
-        mlError.originalError = error;
-        mlError.status = 503; // Always return 503 for ML service unavailability
-
-        throw mlError;
+        const response = error.response;
+        const url = error.config?.url;
+        
+        if (response) {
+          // ML Service responded with an error status (4xx, 5xx)
+          console.error(`ML Service Error [${response.status}] (${url}):`, response.data);
+          
+          const errorDetail = response.data?.detail;
+          const message = (typeof errorDetail === 'object' ? errorDetail.message : errorDetail) || `ML service error: ${response.status}`;
+          
+          const mlError = new Error(message);
+          mlError.status = response.status;
+          mlError.data = response.data;
+          throw mlError;
+        } else if (error.request) {
+          // Request was made but no response received (Service Down)
+          console.error(`ML Service Unreachable (${url}):`, error.message);
+          const mlError = new Error('ML service is unreachable');
+          mlError.status = 503;
+          throw mlError;
+        } else {
+          // Something else happened
+          console.error(`ML Client Error (${url}):`, error.message);
+          throw error;
+        }
       }
     );
   }

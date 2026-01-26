@@ -102,76 +102,101 @@ export default function LearnMorePage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-        {/* Hero / Summary */}
-        <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Why Choose VerbalQ</h2>
-          <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">Why This Platform</h3>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed mb-8">
-            Built with cutting-edge technology and designed for professionals who demand accuracy, speed, and reliability.
+        {/* Hero Section */}
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full mb-6">
+            <div className="w-2 h-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
+            <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              About VerbalQ
+            </span>
+          </div>
+
+          <h1 className="text-5xl sm:text-6xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 dark:from-white dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent">
+              The Future of
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Text Intelligence
+            </span>
+          </h1>
+
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-4xl mx-auto leading-relaxed">
+            VerbalQ is a comprehensive AI-powered platform that transforms how you process, analyze, and enhance text.
+            Built with cutting-edge machine learning and natural language processing technologies.
           </p>
         </div>
 
-        {/* Core Capabilities */}
-        <section className="mb-10">
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="rounded-xl p-6 bg-white dark:bg-gray-800 shadow">
-              <h4 className="font-semibold mb-2">Built using modern full-stack technologies</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">React, Next.js, Node.js, Express, MongoDB, and Python FastAPI</p>
-            </div>
-            <div className="rounded-xl p-6 bg-white dark:bg-gray-800 shadow">
-              <h4 className="font-semibold mb-2">Powered by real machine learning models</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Advanced NLP models including LanguageTool, MarianMT, and custom transformers</p>
-            </div>
-            <div className="rounded-xl p-6 bg-white dark:bg-gray-800 shadow">
-              <h4 className="font-semibold mb-2">Supports multiple languages</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Process text in English, Hindi, Spanish, French, German, Korean, Arabic, and Chinese</p>
-            </div>
-            <div className="rounded-xl p-6 bg-white dark:bg-gray-800 shadow">
-              <h4 className="font-semibold mb-2">Secure authentication and role-based access</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">JWT-based authentication with admin and user roles for secure access control</p>
-            </div>
-            <div className="rounded-xl p-6 bg-white dark:bg-gray-800 shadow">
-              <h4 className="font-semibold mb-2">Designed for accuracy and performance</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Optimized algorithms deliver fast, accurate results with minimal latency</p>
-            </div>
-            <div className="rounded-xl p-6 bg-white dark:bg-gray-800 shadow">
-              <h4 className="font-semibold mb-2">Professional-grade AI processing</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Enterprise-level text analysis with detailed insights and recommendations</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Technology Stack */}
+        {/* Why This Platform */}
         <section className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Powered by Advanced Technology
+              Why This Platform
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Built with enterprise-grade technologies for reliability, scalability, and performance.
+              Built with cutting-edge technology and designed for professionals who demand accuracy, speed, and reliability.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {technologies.map((tech, index) => (
-              <Card key={index} className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <tech.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        {tech.title}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                        {tech.description}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Built using modern full-stack technologies</h3>
+              <p className="text-gray-600 dark:text-gray-400">React, Next.js, Node.js, Express, MongoDB, and Python FastAPI</p>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Powered by real machine learning models</h3>
+              <p className="text-gray-600 dark:text-gray-400">Advanced NLP models including LanguageTool, MarianMT, and custom transformers</p>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Supports multiple languages</h3>
+              <p className="text-gray-600 dark:text-gray-400">Process text in English, Hindi, Spanish, French, German, Korean, Arabic, and Chinese</p>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Secure authentication and role-based access</h3>
+              <p className="text-gray-600 dark:text-gray-400">JWT-based authentication with admin and user roles for secure access control</p>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Designed for accuracy and performance</h3>
+              <p className="text-gray-600 dark:text-gray-400">Optimized algorithms deliver fast, accurate results with minimal latency</p>
+            </Card>
+
+            <Card className="border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Professional-grade AI processing</h3>
+              <p className="text-gray-600 dark:text-gray-400">Enterprise-level text analysis with detailed insights and recommendations</p>
+            </Card>
+          </div>
+
+          {/* Stats Block */}
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6">
+            <div className="text-center">
+              <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">8+</div>
+              <div className="text-gray-600 dark:text-gray-400">Languages</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">4</div>
+              <div className="text-gray-600 dark:text-gray-400">AI Tools</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent">99.9%</div>
+              <div className="text-gray-600 dark:text-gray-400">Accuracy</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">&lt;2s</div>
+              <div className="text-gray-600 dark:text-gray-400">Response Time</div>
+            </div>
+          </div>
+
+          <div className="text-center mt-8">
+            <p className="text-lg text-gray-700 dark:text-gray-300">Start analyzing and improving your text today.</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Join thousands of professionals who trust VerbalQ for their text processing needs.</p>
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <a href="#features" className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-3 rounded-xl shadow-lg">Explore Features</a>
+              <a href="/login" className="inline-flex items-center gap-3 border-2 border-gray-300 text-gray-700 bg-white/80 font-semibold px-6 py-3 rounded-xl">Get Started Free</a>
+            </div>
           </div>
         </section>
 
@@ -240,26 +265,30 @@ export default function LearnMorePage() {
           </Card>
         </section>
 
-        {/* Call To Action */}
+        {/* Mission Section */}
         <section className="mb-20">
           <div className="text-center">
             <Card className="border-0 shadow-xl bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-800 dark:to-gray-900 max-w-4xl mx-auto">
               <CardContent className="p-12 text-white">
+                <Users className="w-16 h-16 mx-auto mb-6 text-blue-400" />
                 <h2 className="text-3xl font-bold mb-6">
-                  Start analyzing and improving your text today.
+                  Empowering Text Processing Worldwide
                 </h2>
                 <p className="text-xl text-gray-300 leading-relaxed mb-8 max-w-3xl mx-auto">
-                  Join thousands of professionals who trust VerbalQ for their text processing needs.
+                  Our mission is to democratize access to advanced AI text processing tools,
+                  making professional-grade language intelligence available to everyone,
+                  from students to enterprise organizations.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="#features" className="inline-flex">
-                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 inline-flex items-center">
-                      Explore Features
+                  <Link href="/login">
+                    <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
+                      Start Using VerbalQ
+                      <ArrowRightIcon className="w-5 h-5 ml-2" />
                     </Button>
                   </Link>
-                  <Link href="/login" className="inline-flex">
-                    <Button variant="outline" className="border-2 border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 rounded-xl transition-all duration-200 inline-flex items-center">
-                      Get Started Free
+                  <Link href="/">
+                    <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 px-8 py-3 rounded-xl transition-all duration-200">
+                      Back to Home
                     </Button>
                   </Link>
                 </div>

@@ -3,8 +3,8 @@ import type { AuthResponse, LoginRequest } from "@/lib/types"
 
 export async function POST(request: NextRequest) {
   try {
-    const body: LoginRequest = await request.json()
-    const { email, password } = body
+    const body = await request.json()
+    const { email, password, requiredRole } = body
 
     // Validate input
     if (!email || !password) {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, requiredRole }),
     })
 
     const backendData = await backendResponse.json()

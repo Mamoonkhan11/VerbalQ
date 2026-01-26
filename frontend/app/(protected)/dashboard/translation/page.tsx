@@ -1,25 +1,38 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowRight } from "lucide-react"
+import { Loader2, ArrowRight, Languages } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useLanguages } from "@/hooks/use-languages"
+import { useLanguages, useTranslationLanguages } from "@/hooks/use-languages"
 import api from "@/lib/api"
 
 export default function TranslationPage() {
   const { toast } = useToast()
   const { languages } = useLanguages()
+  const { supportedPairs } = useTranslationLanguages()
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [sourceLang, setSourceLang] = useState("en")
   const [targetLang, setTargetLang] = useState("es")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Get available target languages based on selected source language
+  const availableTargets = supportedPairs
+    .filter(pair => pair.from === sourceLang)
+    .map(pair => pair.to)
+
+  // Reset target language if not available for new source language
+  useEffect(() => {
+    if (availableTargets.length > 0 && !availableTargets.includes(targetLang)) {
+      setTargetLang(availableTargets[0])
+    }
+  }, [sourceLang, availableTargets, targetLang])
 
   const handleTranslate = async () => {
     if (!inputText.trim()) {
@@ -38,52 +51,44 @@ export default function TranslationPage() {
       })
       const data = response.data
 
-      setOutputText(data.data.translatedText)
-
-      const targetLangName = languages.find(lang => lang.code === targetLang)?.name || targetLang
-      toast({
-        title: "✅ Translation completed",
-        description: `Translated to ${targetLangName}`,
-        className: "border-blue-200 bg-transparent text-blue-800",
-      })
+      if (data.success) {
+        setOutputText(data.data.translatedText)
+        
+        const targetLangName = languages.find(lang => lang.code === targetLang)?.name || targetLang
+        toast({
+          title: " Translation completed",
+          description: `Translated to ${targetLangName}`,
+          className: "border-blue-200 bg-transparent text-blue-800",
+        })
+      }
     } catch (err: any) {
-      // Handle service unavailable
-      if (err.response?.status === 503 && err.response?.data?.error === 'ML_SERVICE_UNAVAILABLE') {
+      const errorData = err.response?.data
+      
+      // Handle explicit error codes from backend
+      if (errorData?.error === 'TRANSLATION_NOT_SUPPORTED') {
         toast({
-          title: "⚠️ AI service is currently unavailable",
-          description: "Please try again later.",
-          className: "border-red-200 bg-transparent text-red-800",
+          variant: "destructive",
+          title: " Not Supported",
+          description: "This language pair is not currently supported.",
         })
         return
       }
 
-      // Handle unsupported language
-      if (err.response?.data?.error === 'LANGUAGE_NOT_SUPPORTED') {
+      if (err.response?.status === 503) {
         toast({
-          title: "🚫 Language Not Supported",
-          description: "One or both of the selected languages are not supported for translation.",
-          className: "border-orange-200 bg-transparent text-orange-800",
+          variant: "destructive",
+          title: " Service Unavailable",
+          description: "The AI translation service is currently offline.",
         })
         return
       }
 
-      // Handle feature disabled
-      if (err.response?.status === 403) {
-        toast({
-          title: "🚫 Feature Disabled",
-          description: "This feature is currently disabled by the administrator.",
-          className: "border-orange-200 bg-transparent text-orange-800",
-        })
-        return
-      }
-
-      // Handle other errors
-      const errorMessage = err.response?.data?.message || "Failed to translate text. Please try again."
+      const errorMessage = errorData?.message || "Failed to translate. Please try again."
       setError(errorMessage)
       toast({
-        title: "❌ Error",
+        variant: "destructive",
+        title: " Error",
         description: errorMessage,
-        className: "border-red-200 bg-transparent text-red-800",
       })
     } finally {
       setIsLoading(false)
@@ -138,11 +143,16 @@ export default function TranslationPage() {
                       <SelectValue placeholder="Select target language" />
                     </SelectTrigger>
                     <SelectContent>
-                      {languages.map((lang) => (
-                        <SelectItem key={lang.code} value={lang.code}>
-                          {lang.name}
-                        </SelectItem>
-                      ))}
+                      {languages
+                        .filter(lang => availableTargets.includes(lang.code))
+                        .map((lang) => (
+                          <SelectItem key={lang.code} value={lang.code}>
+                            {lang.name}
+                          </SelectItem>
+                        ))}
+                      {availableTargets.length === 0 && (
+                        <SelectItem value="none" disabled>No target languages available</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -162,7 +172,11 @@ export default function TranslationPage() {
                 </Alert>
               )}
 
-              <Button onClick={handleTranslate} disabled={isLoading} className="w-full">
+              <Button 
+                onClick={handleTranslate} 
+                disabled={isLoading || !inputText.trim() || availableTargets.length === 0} 
+                className="w-full"
+              >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

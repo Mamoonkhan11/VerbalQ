@@ -20,19 +20,9 @@ export function useLanguages() {
         const data = await response.json()
         setLanguages(data.languages || [])
       } catch (err) {
-        // Silently fall back to static languages - this is expected when backend isn't running
-        // No console errors logged as this is graceful degradation
-        setLanguages([
-          { code: 'en', name: 'English' },
-          { code: 'hi', name: 'Hindi' },
-          { code: 'es', name: 'Spanish' },
-          { code: 'fr', name: 'French' },
-          { code: 'de', name: 'German' },
-          { code: 'ko', name: 'Korean' },
-          { code: 'ar', name: 'Arabic' },
-          { code: 'zh', name: 'Chinese' }
-        ])
-        setError('Using fallback languages')
+        console.error('Error fetching languages:', err)
+        setLanguages([])
+        setError('Failed to load languages')
       } finally {
         setLoading(false)
       }
@@ -42,4 +32,28 @@ export function useLanguages() {
   }, [])
 
   return { languages, loading, error }
+}
+
+export function useTranslationLanguages() {
+  const [supportedPairs, setSupportedPairs] = useState<{from: string, to: string}[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPairs = async () => {
+      try {
+        const response = await fetch('/api/ai/languages/translation')
+        if (!response.ok) throw new Error()
+        const data = await response.json()
+        setSupportedPairs(data.supportedPairs || [])
+      } catch (err) {
+        console.error('Error fetching translation pairs:', err)
+        setSupportedPairs([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPairs()
+  }, [])
+
+  return { supportedPairs, loading }
 }

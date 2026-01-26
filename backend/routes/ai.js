@@ -49,6 +49,13 @@ router.get('/languages', (req, res) => {
 });
 
 /**
+ * @route   GET /api/ai/languages/translation
+ * @desc    Get supported translation pairs
+ * @access  Public
+ */
+router.get('/languages/translation', aiController.getTranslationLanguages);
+
+/**
  * @route   POST /api/ai/grammar
  * @desc    Check grammar of provided text
  * @access  Private (requires authentication)

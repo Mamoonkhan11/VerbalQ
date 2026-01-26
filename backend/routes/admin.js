@@ -24,11 +24,11 @@ router.get('/stats', auth, adminOnly, adminController.getStats);
 router.get('/users', auth, adminOnly, adminController.getUsers);
 
 /**
- * @route   PUT /api/admin/block/:userId
+ * @route   PATCH /api/admin/block/:userId
  * @desc    Block/unblock a user
  * @access  Private (admin only)
  */
-router.put('/block/:userId', auth, adminOnly, adminController.blockUser);
+router.patch('/block/:userId', auth, adminOnly, adminController.blockUser);
 
 /**
  * Application settings routes

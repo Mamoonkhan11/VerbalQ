@@ -12,4 +12,18 @@ const auth = require('../middleware/auth');
  */
 router.get('/my', auth, historyController.getMyHistory);
 
+/**
+ * @route   DELETE /api/history/clear
+ * @desc    Clear all user history
+ * @access  Private
+ */
+router.delete('/clear', auth, historyController.clearMyHistory);
+
+/**
+ * @route   DELETE /api/history/:id
+ * @desc    Delete a specific history entry
+ * @access  Private
+ */
+router.delete('/:id', auth, historyController.deleteEntry);
+
 module.exports = router;

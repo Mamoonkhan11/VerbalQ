@@ -3,20 +3,35 @@ const router = express.Router();
 const authController = require('../controllers/AuthController');
 const auth = require('../middleware/auth');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
+const { authRateLimit } = require('../middleware/rateLimit');
 
 /**
  * @route   POST /api/auth/register
  * @desc    Register a new user
  * @access  Public
  */
-router.post('/register', validateRegistration, authController.register);
+router.post('/register', authRateLimit, validateRegistration, authController.register);
 
 /**
  * @route   POST /api/auth/login
  * @desc    Login user
  * @access  Public
  */
-router.post('/login', validateLogin, authController.login);
+router.post('/login', authRateLimit, validateLogin, authController.login);
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Request password reset token
+ * @access  Public
+ */
+router.post('/forgot-password', authRateLimit, authController.forgotPassword);
+
+/**
+ * @route   POST /api/auth/reset-password/:token
+ * @desc    Reset password using token
+ * @access  Public
+ */
+router.post('/reset-password/:token', authRateLimit, authController.resetPassword);
 
 /**
  * @route   GET /api/auth/me

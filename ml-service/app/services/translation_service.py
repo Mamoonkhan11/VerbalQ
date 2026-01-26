@@ -14,119 +14,99 @@ from ..models.schemas import TranslationRequest, TranslationResponse
 class TranslationService:
     """Service for translating text between languages using MarianMT."""
 
-    # Language code mappings for MarianMT models
-    LANGUAGE_MODELS = {
-        'en-es': 'Helsinki-NLP/opus-mt-en-es',  # English to Spanish
-        'es-en': 'Helsinki-NLP/opus-mt-es-en',  # Spanish to English
-        'en-hi': 'Helsinki-NLP/opus-mt-en-hi',  # English to Hindi
-        'hi-en': 'Helsinki-NLP/opus-mt-hi-en',  # Hindi to English
-        'en-ko': 'Helsinki-NLP/opus-mt-en-ko',  # English to Korean
-        'ko-en': 'Helsinki-NLP/opus-mt-ko-en',  # Korean to English
+    # Explicit Model Registry (Source -> Target)
+    TRANSLATION_MODELS = {
+        ("en", "es"): "Helsinki-NLP/opus-mt-en-es",
+        ("es", "en"): "Helsinki-NLP/opus-mt-es-en",
+        ("en", "hi"): "Helsinki-NLP/opus-mt-en-hi",
+        ("hi", "en"): "Helsinki-NLP/opus-mt-hi-en",
+        ("en", "ko"): "Helsinki-NLP/opus-mt-en-ko",
+        ("ko", "en"): "Helsinki-NLP/opus-mt-ko-en",
+        ("en", "fr"): "Helsinki-NLP/opus-mt-en-fr",
+        ("fr", "en"): "Helsinki-NLP/opus-mt-fr-en",
+        ("en", "de"): "Helsinki-NLP/opus-mt-en-de",
+        ("de", "en"): "Helsinki-NLP/opus-mt-de-en",
+        ("en", "zh"): "Helsinki-NLP/opus-mt-en-zh",
+        ("zh", "en"): "Helsinki-NLP/opus-mt-zh-en",
+        ("en", "ar"): "Helsinki-NLP/opus-mt-en-ar",
+        ("ar", "en"): "Helsinki-NLP/opus-mt-ar-en",
     }
 
     def __init__(self):
         """Initialize translation models cache."""
-        self.models: Dict[str, Dict] = {}
+        self.models: Dict[tuple, Dict] = {}
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    def _load_model(self, model_key: str) -> Dict:
+    def _load_model(self, lang_pair: tuple) -> Dict:
         """
         Load or retrieve a cached translation model.
-
-        Args:
-            model_key: Key identifying the language pair model
-
-        Returns:
-            Dictionary containing tokenizer and model
+        Lazy-loading implementation.
         """
-        if model_key not in self.models:
+        if lang_pair not in self.models:
+            if lang_pair not in self.TRANSLATION_MODELS:
+                raise ValueError(f"Translation between {lang_pair[0]} and {lang_pair[1]} is not supported.")
+
             try:
-                model_name = self.LANGUAGE_MODELS[model_key]
+                model_name = self.TRANSLATION_MODELS[lang_pair]
+                print(f"Loading translation model: {model_name}...")
                 tokenizer = MarianTokenizer.from_pretrained(model_name)
                 model = MarianMTModel.from_pretrained(model_name)
                 model.to(self.device)
                 model.eval()
 
-                self.models[model_key] = {
+                self.models[lang_pair] = {
                     'tokenizer': tokenizer,
                     'model': model
                 }
             except Exception as e:
-                raise RuntimeError(f"Failed to load translation model {model_key}: {str(e)}")
+                print(f"Error loading model {lang_pair}: {str(e)}")
+                raise RuntimeError(f"Translation model for {lang_pair} failed to load.")
 
-        return self.models[model_key]
+        return self.models[lang_pair]
 
     def translate(self, request: TranslationRequest) -> TranslationResponse:
         """
         Translate text from source language to target language.
-
-        Args:
-            request: TranslationRequest with text, source_lang, and target_lang
-
-        Returns:
-            TranslationResponse with translated text
-
-        The translation process:
-        1. Determine the appropriate model based on language pair
-        2. Tokenize the input text
-        3. Generate translation using the transformer model
-        4. Decode and return the translated text
+        Raises exceptions for routers to handle with appropriate status codes.
         """
-        try:
-            # Create model key for the language pair
-            model_key = f"{request.source_lang.value}-{request.target_lang.value}"
+        src = request.source_lang.value if hasattr(request.source_lang, 'value') else request.source_lang
+        tgt = request.target_lang.value if hasattr(request.target_lang, 'value') else request.target_lang
+        lang_pair = (src, tgt)
 
-            # Check if we support this language pair
-            if model_key not in self.LANGUAGE_MODELS:
-                # Try reverse direction if direct translation not available
-                reverse_key = f"{request.target_lang.value}-{request.source_lang.value}"
-                if reverse_key in self.LANGUAGE_MODELS:
-                    # For reverse translation, we'll translate to target then back
-                    # This is a simplified approach - in production, you'd want direct models
-                    return TranslationResponse(
-                        translated_text=f"[Translation not directly supported. Would translate: {request.text}]",
-                        source_lang=request.source_lang.value,
-                        target_lang=request.target_lang.value
-                    )
-                else:
-                    raise ValueError(f"Translation between {request.source_lang.value} and {request.target_lang.value} is not supported")
+        # Validate language pair exists in registry
+        if lang_pair not in self.TRANSLATION_MODELS:
+            raise ValueError(f"Translation between {src} and {tgt} is not supported.")
 
-            # Load the appropriate model
-            model_data = self._load_model(model_key)
-            tokenizer = model_data['tokenizer']
-            model = model_data['model']
+        # Load the appropriate model (lazy-load)
+        model_data = self._load_model(lang_pair)
+        tokenizer = model_data['tokenizer']
+        model = model_data['model']
 
-            # Tokenize input text
-            inputs = tokenizer(request.text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        # Tokenize input text
+        inputs = tokenizer(request.text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
-            # Generate translation
-            with torch.no_grad():
-                outputs = model.generate(
-                    **inputs,
-                    max_length=512,
-                    num_beams=4,  # Use beam search for better quality
-                    early_stopping=True,
-                    do_sample=False,  # Deterministic output
-                    temperature=1.0
-                )
-
-            # Decode the translated text
-            translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-            return TranslationResponse(
-                translated_text=translated_text.strip(),
-                source_lang=request.source_lang.value,
-                target_lang=request.target_lang.value
+        # Generate translation
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_length=512,
+                num_beams=4,
+                early_stopping=True
             )
 
-        except Exception as e:
-            # Fallback: return a placeholder indicating translation service is unavailable
-            return TranslationResponse(
-                translated_text=f"[Translation service error: {request.text}]",
-                source_lang=request.source_lang.value,
-                target_lang=request.target_lang.value
-            )
+        # Decode the translated text
+        translated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        return TranslationResponse(
+            translated_text=translated_text.strip(),
+            source_lang=src,
+            target_lang=tgt
+        )
+
+    def get_supported_languages(self):
+        """Return a list of supported translation language pairs."""
+        return [{"from": pair[0], "to": pair[1]} for pair in self.TRANSLATION_MODELS.keys()]
 
 
 # Global service instance

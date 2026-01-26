@@ -92,17 +92,35 @@ class GrammarService:
                 issue = GrammarIssue(
                     message=match.message,
                     offset=match.offset,
-                    length=match.errorLength,
+                    length=getattr(match, 'errorLength', getattr(match, 'length', 0)),
                     rule_id=getattr(match, 'ruleId', None),
                     suggestions=list(match.replacements) if match.replacements else []
                 )
                 issues.append(issue)
 
-            # Apply corrections to get the corrected text
-            corrected_text = tool.correct(request.text)
+            # Apply corrections carefully
+            # Sort matches in reverse order to apply corrections from back to front without shifting offsets
+            sorted_matches = sorted(matches, key=lambda x: x.offset, reverse=True)
+            current_text = request.text
+            
+            for match in sorted_matches:
+                offset = match.offset
+                length = getattr(match, 'errorLength', getattr(match, 'length', 0))
+                original_segment = current_text[offset:offset + length]
+                suggestions = list(match.replacements) if match.replacements else []
+
+                # Find the first suggestion that passes validation
+                best_suggestion = None
+                for suggestion in suggestions:
+                    if self._validate_correction(original_segment, suggestion):
+                        best_suggestion = suggestion
+                        break
+                
+                if best_suggestion:
+                    current_text = current_text[:offset] + best_suggestion + current_text[offset + length:]
 
             return GrammarCheckResponse(
-                corrected_text=corrected_text,
+                corrected_text=current_text,
                 issues=issues
             )
 
@@ -110,6 +128,41 @@ class GrammarService:
             print(f"LanguageTool error: {str(e)}, falling back to mock mode")
             # If LanguageTool fails, use fallback
             return self._fallback_grammar_check(request)
+
+    def _validate_correction(self, original: str, suggestion: str) -> bool:
+        """
+        Validate a suggestion to ensure it doesn't introduce common agreement errors.
+        """
+        import re
+        orig_lower = original.lower().strip()
+        sugg_lower = suggestion.lower().strip()
+
+        # Rule 1: Prevent blind demonstrative flipping (e.g., "This" -> "These")
+        # unless it's explicitly fixing a mismatch.
+        demonstratives_sing = {'this', 'that'}
+        demonstratives_plur = {'these', 'those'}
+        
+        if orig_lower in demonstratives_sing and sugg_lower in demonstratives_plur:
+            # Only allow if the original was followed by a plural verb/noun
+            # but since we only see the segment, we should be conservative.
+            return False
+        if orig_lower in demonstratives_plur and sugg_lower in demonstratives_sing:
+            return False
+
+        # Rule 2: Subject-Verb Agreement / Determiner-Noun consistency for common patterns
+        # Invalid pairs: plural demonstrative + singular verb OR vice versa
+        invalid_patterns = [
+            # Plural demonstrative + singular verb/noun
+            (r"\b(these|those)\b", r"\b(is|was|has|does|isn't|wasn't|hasn't|doesn't|a|an|pen|car|book)\b"),
+            # Singular demonstrative + plural verb/noun
+            (r"\b(this|that)\b", r"\b(are|were|have|do|aren't|weren't|haven't|don't|pens|cars|books)\b"),
+        ]
+
+        for dem_pat, target_pat in invalid_patterns:
+            if re.search(dem_pat, sugg_lower) and re.search(target_pat, sugg_lower):
+                return False
+
+        return True
 
     def _fallback_grammar_check(self, request: GrammarCheckRequest) -> GrammarCheckResponse:
         """

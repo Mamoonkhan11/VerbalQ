@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
 
 interface ProtectedRouteProps {
@@ -44,16 +45,22 @@ interface AdminRouteProps {
 export function AdminRoute({ children }: AdminRouteProps) {
   const { user, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
         router.push('/login')
       } else if (user?.role !== 'admin') {
+        toast({
+          variant: "destructive",
+          title: "Unauthorized Access",
+          description: "You do not have permission to access admin routes.",
+        })
         router.push('/dashboard')
       }
     }
-  }, [isAuthenticated, isLoading, user, router])
+  }, [isAuthenticated, isLoading, user, router, toast])
 
   if (isLoading) {
     return (

@@ -15,13 +15,6 @@ router = APIRouter(prefix="/translate", tags=["translation"])
 async def translate_text(request: TranslationRequest):
     """
     Translate text from source language to target language.
-
-    Supported language pairs:
-    - English ↔ Spanish (en-es, es-en)
-    - English ↔ Hindi (en-hi, hi-en)
-    - English ↔ Korean (en-ko, ko-en)
-
-    Uses MarianMT transformer models for high-quality translation.
     """
     try:
         result = translation_service.translate(request)
@@ -29,10 +22,28 @@ async def translate_text(request: TranslationRequest):
     except ValueError as e:
         raise HTTPException(
             status_code=400,
-            detail=str(e)
+            detail={
+                "success": False,
+                "error": "TRANSLATION_NOT_SUPPORTED",
+                "message": str(e)
+            }
         )
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Translation service error: {str(e)}"
+            detail={
+                "success": False,
+                "error": "SERVICE_ERROR",
+                "message": str(e)
+            }
         )
+
+@router.get("/languages")
+async def get_supported_languages():
+    """
+    Get all supported translation language pairs.
+    """
+    return {
+        "success": True,
+        "supportedPairs": translation_service.get_supported_languages()
+    }

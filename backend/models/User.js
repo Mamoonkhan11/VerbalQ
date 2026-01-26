@@ -30,7 +30,9 @@ const userSchema = new mongoose.Schema({
   isBlocked: {
     type: Boolean,
     default: false
-  }
+  },
+  resetPasswordToken: String,
+  resetPasswordExpires: Date
 }, {
   timestamps: true // Adds createdAt and updatedAt automatically
 });

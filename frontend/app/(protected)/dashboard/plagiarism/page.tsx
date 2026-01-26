@@ -91,7 +91,7 @@ export default function PlagiarismPage() {
         title: "❌ Error",
         description: errorMessage,
         className: "border-red-200 bg-transparent text-red-800",
-      })
+        })
     } finally {
       setIsLoading(false)
     }
