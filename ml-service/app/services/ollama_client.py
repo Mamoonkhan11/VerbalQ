@@ -164,6 +164,46 @@ Rewritten text:"""
             humanized = humanized[1:-1]
             
         return humanized
+    
+    def translate_text(self, text: str, source_lang: str, target_lang: str) -> str:
+        """
+        Translate text using LLM fallback.
+        
+        Args:
+            text: Text to translate
+            source_lang: Source language code
+            target_lang: Target language code
+            
+        Returns:
+            Translated text
+            
+        Raises:
+            ConnectionError: If Ollama server is unavailable
+            RuntimeError: If translation fails
+        """
+        prompt = f"""You are a professional translator.
+
+Translate ONLY.
+Do not paraphrase.
+Do not add or remove meaning.
+Preserve exact intent.
+
+From {source_lang} to {target_lang}:
+
+{text}
+
+Return ONLY translated text."""
+        
+        translated = self.generate(prompt)
+        
+        # Clean up response
+        translated = translated.strip()
+        if translated.startswith('"') and translated.endswith('"'):
+            translated = translated[1:-1]
+        if translated.startswith("'") and translated.endswith("'"):
+            translated = translated[1:-1]
+            
+        return translated
 
 
 # Global Ollama client instance

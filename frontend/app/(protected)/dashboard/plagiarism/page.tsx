@@ -14,7 +14,6 @@ import api from "@/lib/api"
 
 interface Match {
   text: string
-  source: string
   similarity: number
 }
 
@@ -23,6 +22,8 @@ export default function PlagiarismPage() {
   const { languages } = useLanguages()
   const [inputText, setInputText] = useState("")
   const [plagiarismScore, setPlagiarismScore] = useState<number | null>(null)
+  const [riskLevel, setRiskLevel] = useState<string>("")
+  const [totalSentences, setTotalSentences] = useState<number>(0)
   const [matches, setMatches] = useState<Match[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
@@ -47,11 +48,13 @@ export default function PlagiarismPage() {
       const data = response.data
 
       setPlagiarismScore(data.data.plagiarismScore)
-      setMatches(data.data.matches || [])
+      setRiskLevel(data.data.riskLevel)
+      setTotalSentences(data.data.totalSentences)
+      setMatches(data.data.matchedSentences || [])
 
       toast({
         title: "✅ Plagiarism check completed",
-        description: `Analysis found ${data.data.plagiarismScore}% similarity`,
+        description: `${riskLevel} risk • ${data.data.plagiarismScore}% similarity • ${totalSentences} sentences analyzed`,
         className: "border-blue-200 bg-transparent text-blue-800",
       })
     } catch (err: any) {
@@ -182,16 +185,18 @@ export default function PlagiarismPage() {
                     {plagiarismScore}%
                   </span>
                   <Badge variant={getScoreBadgeVariant(plagiarismScore)}>
-                    {plagiarismScore < 10 ? "Original" : plagiarismScore < 25 ? "Minor" : "High"}
+                    {riskLevel}
                   </Badge>
                 </div>
                 <Progress value={plagiarismScore} className="h-2" />
                 <p className="text-sm text-muted-foreground">
-                  {plagiarismScore < 10
+                  {riskLevel === "Low" 
                     ? "Your text appears to be original."
-                    : plagiarismScore < 25
-                      ? "Low plagiarism detected. Review the matches below."
-                      : "High plagiarism detected. Review the matches below."}
+                    : riskLevel === "Medium"
+                      ? "Medium plagiarism detected. Review the matches below."
+                      : riskLevel === "High"
+                        ? "High plagiarism detected. Review the matches below."
+                        : "Severe plagiarism detected. Immediate review required."}
                 </p>
               </div>
             </CardContent>
@@ -202,7 +207,7 @@ export default function PlagiarismPage() {
             <Card className="border border-border">
               <CardHeader>
                 <CardTitle className="text-lg">Detected Matches ({matches.length})</CardTitle>
-                <CardDescription>Sentences with potential similarities</CardDescription>
+                <CardDescription>{totalSentences} sentences analyzed • {matches.length} matches found</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -211,10 +216,9 @@ export default function PlagiarismPage() {
                       <div className="flex items-start justify-between mb-2">
                         <p className="text-sm font-medium text-foreground flex-1">{match.text}</p>
                         <Badge variant="secondary" className="ml-2 whitespace-nowrap">
-                          {match.similarity}%
+                          {Math.round(match.similarity * 100)}% similarity
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">Source: {match.source}</p>
                     </div>
                   ))}
                 </div>

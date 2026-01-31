@@ -6,8 +6,11 @@ python-multipart
 # NLP Libraries
 transformers
 torch
+sentence-transformers
 sentencepiece
 sacremoses
+scikit-learn
+nltk
 
 # Additional utilities
 numpy

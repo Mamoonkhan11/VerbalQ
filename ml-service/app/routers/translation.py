@@ -28,7 +28,9 @@ async def translate_text(request: TranslationRequest):
                 "message": str(e)
             }
         )
+ 
     except Exception as e:
+        # Other service errors
         raise HTTPException(
             status_code=500,
             detail={
@@ -37,6 +39,26 @@ async def translate_text(request: TranslationRequest):
                 "message": str(e)
             }
         )
+    except ConnectionError as e:
+        # LLM service unavailable
+        if "LLM_UNAVAILABLE" in str(e):
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "success": False,
+                    "error": "LLM_UNAVAILABLE",
+                    "message": "Translation service temporarily unavailable"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "success": False,
+                    "error": "SERVICE_UNAVAILABLE",
+                    "message": str(e)
+                }
+            )
 
 @router.get("/languages")
 async def get_supported_languages():

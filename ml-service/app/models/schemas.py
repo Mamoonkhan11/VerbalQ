@@ -106,13 +106,14 @@ class PlagiarismCheckRequest(BaseModel):
 class MatchedSentence(BaseModel):
     text: str = Field(..., description="Matching sentence from reference corpus")
     similarity: float = Field(..., ge=0.0, le=1.0, description="Similarity score (0-1)")
-    source: Optional[str] = Field(None, description="Source of the matching text")
 
 
 class PlagiarismCheckResponse(BaseModel):
-    similarity_score: float = Field(..., ge=0.0, le=100.0, description="Overall similarity percentage")
-    matched_sentences: List[MatchedSentence] = Field(default_factory=list, description="List of matched sentences")
-    is_plagiarized: bool = Field(..., description="Whether text is considered plagiarized")
+    success: bool = Field(default=True, description="Operation success status")
+    plagiarismScore: float = Field(..., ge=0.0, le=100.0, description="Overall plagiarism percentage")
+    riskLevel: str = Field(..., description="Risk level: Low, Medium, High, Severe")
+    matchedSentences: List[MatchedSentence] = Field(default_factory=list, description="List of matched sentences")
+    totalSentences: int = Field(..., description="Total number of sentences in input text")
 
 
 # Language Response Schemas

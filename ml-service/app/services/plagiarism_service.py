@@ -1,26 +1,28 @@
 """
-Plagiarism detection service using TF-IDF and cosine similarity.
+Semantic plagiarism detection service using sentence-transformers.
 
-This service compares input text against a local reference corpus using
-traditional NLP techniques to detect potential plagiarism.
+This service uses deep learning embeddings to detect semantic similarity
+and paraphrased content, providing accurate plagiarism detection.
 """
 
 import os
 import nltk
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 from typing import List, Tuple, Dict, Any
 import re
 from ..models.schemas import PlagiarismCheckRequest, PlagiarismCheckResponse, MatchedSentence
 
 
 class PlagiarismService:
-    """Service for detecting plagiarism using TF-IDF and cosine similarity."""
+    """Service for detecting plagiarism using semantic embeddings."""
 
     def __init__(self):
-        """Initialize the plagiarism detection service."""
-        self.vectorizer = None
+        """Initialize the semantic plagiarism detection service."""
+        self.model = None
         self.corpus_sentences: List[str] = []
+        self.corpus_embeddings = None
         self.corpus_sources: List[str] = []
 
         # Download required NLTK data
@@ -29,8 +31,21 @@ class PlagiarismService:
         except LookupError:
             nltk.download('punkt', quiet=True)
 
+        # Initialize embedding model (load once globally for performance)
+        self._initialize_model()
+        
         # Initialize with sample reference corpus
         self._initialize_corpus()
+
+    def _initialize_model(self):
+        """Initialize the sentence transformer model."""
+        try:
+            # Use all-MiniLM-L6-v2 - fast, small, accurate, industry standard
+            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+            print("✅ Semantic embedding model loaded successfully")
+        except Exception as e:
+            print(f"❌ Failed to load embedding model: {e}")
+            raise RuntimeError("Failed to initialize plagiarism detection model")
 
     def _initialize_corpus(self):
         """Initialize the reference corpus with sample documents."""
@@ -80,110 +95,112 @@ class PlagiarismService:
             self.corpus_sentences.extend(sentences)
             self.corpus_sources.extend([doc['source']] * len(sentences))
 
-        # Initialize TF-IDF vectorizer
-        self.vectorizer = TfidfVectorizer(
-            stop_words='english',
-            ngram_range=(1, 2),  # Include both unigrams and bigrams
-            max_features=5000,   # Limit vocabulary size
-            strip_accents='unicode',
-            lowercase=True
-        )
-
-        # Fit the vectorizer on the corpus
-        if self.corpus_sentences:
-            self.vectorizer.fit(self.corpus_sentences)
+        # Generate embeddings for the entire corpus (one-time operation)
+        if self.corpus_sentences and self.model:
+            print("Generating embeddings for reference corpus...")
+            self.corpus_embeddings = self.model.encode(
+                self.corpus_sentences, 
+                convert_to_tensor=False,
+                show_progress_bar=True
+            )
+            print(f"✅ Generated embeddings for {len(self.corpus_sentences)} sentences")
 
     def check_plagiarism(self, request: PlagiarismCheckRequest) -> PlagiarismCheckResponse:
         """
-        Check input text for plagiarism against the reference corpus.
-
+        Check input text for plagiarism using semantic similarity.
+        
         Args:
             request: PlagiarismCheckRequest containing the text to check
-
+            
         Returns:
             PlagiarismCheckResponse with similarity score and matched sentences
-
-        The plagiarism detection process:
+            
+        The semantic plagiarism detection process:
         1. Split input text into sentences
-        2. Calculate TF-IDF vectors for both input and corpus sentences
-        3. Compute cosine similarity between each input sentence and corpus sentences
-        4. Identify highly similar sentence pairs
-        5. Calculate overall similarity score
-        6. Return results with matched sentences
+        2. Generate embeddings for input sentences using sentence-transformers
+        3. Compare against pre-computed corpus embeddings using cosine similarity
+        4. Identify semantically similar sentence pairs (detects paraphrasing)
+        5. Calculate overall plagiarism score based on matched sentences
+        6. Return results with risk level and matched sentences
         """
         try:
+            # Validate model is loaded
+            if not self.model:
+                raise RuntimeError("Embedding model not initialized")
+
             # Split input text into sentences
-            input_sentences = nltk.sent_tokenize(request.text)
+            input_sentences = nltk.sent_tokenize(request.text.strip())
 
             if not input_sentences:
                 return PlagiarismCheckResponse(
-                    similarity_score=0.0,
-                    matched_sentences=[],
-                    is_plagiarized=False
+                    plagiarismScore=0,
+                    riskLevel="Low",
+                    matchedSentences=[],
+                    totalSentences=0
                 )
 
-            # Vectorize input sentences
-            input_vectors = self.vectorizer.transform(input_sentences)
+            total_sentences = len(input_sentences)
+            
+            # Generate embeddings for input sentences (batch processing)
+            input_embeddings = self.model.encode(
+                input_sentences, 
+                convert_to_tensor=False,
+                show_progress_bar=False
+            )
 
-            # Vectorize corpus sentences
-            corpus_vectors = self.vectorizer.transform(self.corpus_sentences)
-
-            # Calculate similarities
-            similarities = cosine_similarity(input_vectors, corpus_vectors)
-
-            # Find matches above threshold
+            # Calculate similarities with corpus
+            similarities = cosine_similarity(input_embeddings, self.corpus_embeddings)
+            
+            # Find matches above semantic threshold
             matched_sentences = []
-            threshold = 0.3  # 30% similarity threshold
-
+            matched_count = 0
+            
+            # Semantic similarity thresholds
+            HIGH_THRESHOLD = 0.85    # High plagiarism (direct copy)
+            MEDIUM_THRESHOLD = 0.70  # Possible paraphrasing
+            
             for i, input_sentence in enumerate(input_sentences):
-                # Find best matches for this input sentence
+                # Find best match for this input sentence
                 sentence_similarities = similarities[i]
+                best_match_idx = sentence_similarities.argmax()
+                best_similarity = sentence_similarities[best_match_idx]
+                
+                # Check if similarity exceeds threshold
+                if best_similarity >= MEDIUM_THRESHOLD:
+                    matched_count += 1
+                    matched_sentences.append({
+                        "text": self.corpus_sentences[best_match_idx],
+                        "similarity": float(best_similarity)
+                    })
 
-                # Get top matches above threshold
-                above_threshold = sentence_similarities >= threshold
-                if above_threshold.any():
-                    # Find the best match
-                    best_match_idx = sentence_similarities.argmax()
-                    best_similarity = sentence_similarities[best_match_idx]
-
-                    matched_sentences.append(MatchedSentence(
-                        text=self.corpus_sentences[best_match_idx],
-                        similarity=float(best_similarity),
-                        source=self.corpus_sources[best_match_idx]
-                    ))
-
-            # Calculate overall similarity score
-            if similarities.size > 0:
-                # Use average of top similarities as overall score
-                top_similarities = []
-                for similarities_row in similarities:
-                    max_sim = similarities_row.max()
-                    if max_sim >= threshold:
-                        top_similarities.append(max_sim)
-
-                if top_similarities:
-                    overall_similarity = sum(top_similarities) / len(top_similarities)
-                    similarity_score = min(overall_similarity * 100, 100.0)  # Convert to percentage
-                else:
-                    similarity_score = 0.0
+            # Calculate plagiarism score
+            plagiarism_score = (matched_count / total_sentences) * 100 if total_sentences > 0 else 0
+            
+            # Determine risk level
+            if plagiarism_score <= 20:
+                risk_level = "Low"
+            elif plagiarism_score <= 50:
+                risk_level = "Medium"
+            elif plagiarism_score <= 80:
+                risk_level = "High"
             else:
-                similarity_score = 0.0
-
-            # Determine if text is plagiarized (above 40% overall similarity)
-            is_plagiarized = similarity_score >= 40.0
+                risk_level = "Severe"
 
             return PlagiarismCheckResponse(
-                similarity_score=round(similarity_score, 1),
-                matched_sentences=matched_sentences[:5],  # Limit to top 5 matches
-                is_plagiarized=is_plagiarized
+                plagiarismScore=round(plagiarism_score, 1),
+                riskLevel=risk_level,
+                matchedSentences=matched_sentences,
+                totalSentences=total_sentences
             )
 
         except Exception as e:
-            # Return safe default if processing fails
+            print(f"Plagiarism detection error: {e}")
+            # Return safe default on error
             return PlagiarismCheckResponse(
-                similarity_score=0.0,
-                matched_sentences=[],
-                is_plagiarized=False
+                plagiarismScore=0,
+                riskLevel="Low",
+                matchedSentences=[],
+                totalSentences=0
             )
 
 

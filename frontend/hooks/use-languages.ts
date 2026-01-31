@@ -64,7 +64,6 @@ export function useTranslationLanguages() {
         console.error('Error fetching translation pairs:', err)
         // Fallback to common pairs
         setSupportedPairs([
-          { from: 'en', to: 'es' },
           { from: 'en', to: 'fr' },
           { from: 'en', to: 'de' },
           { from: 'en', to: 'hi' },

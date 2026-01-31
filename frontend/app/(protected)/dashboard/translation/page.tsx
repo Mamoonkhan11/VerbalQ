@@ -21,17 +21,18 @@ export default function TranslationPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
 
-  // Get available target languages based on selected source language
-  const availableTargets = supportedPairs
-    .filter(pair => pair.from === sourceLang)
-    .map(pair => pair.to)
+  // For hybrid system, all languages are available as targets since LLM fallback works for any pair
+  // Exclude same language as source (no English to English translation)
+  const availableTargets = languages
+    .map(lang => lang.code)
+    .filter(code => code !== sourceLang)
 
-  // Reset target language if not available for new source language
+  // Reset target language only if it's not in the available languages
   useEffect(() => {
-    if (availableTargets.length > 0 && !availableTargets.includes(targetLang)) {
+    if (languages.length > 0 && !availableTargets.includes(targetLang)) {
       setTargetLang(availableTargets[0])
     }
-  }, [sourceLang, availableTargets, targetLang])
+  }, [sourceLang, availableTargets, targetLang, languages.length])
 
   const handleTranslate = async () => {
     if (!inputText.trim()) {
@@ -58,9 +59,19 @@ export default function TranslationPage() {
         setOutputText(data.data.translatedText)
         
         const targetLangName = languages.find(lang => lang.code === targetLang)?.name || targetLang
+        const method = data.data.method || 'unknown'
+        
+        // Show method-specific toast
+        let badgeText = ""
+        if (method === "opus") {
+          badgeText = "Fast Translation"
+        } else if (method === "llm") {
+          badgeText = "AI Translation"
+        }
+        
         toast({
           title: "Translation completed",
-          description: `Translated to ${targetLangName}`,
+          description: `${badgeText} • Translated to ${targetLangName}`,
           className: "bg-white text-black border-gray-200",
         })
       }
@@ -79,8 +90,8 @@ export default function TranslationPage() {
 
       if (err.response?.status === 503) {
         toast({
-          title: "Service unavailable",
-          description: "The AI translation service is currently offline.",
+          title: "Translation service unavailable",
+          description: "The translation service is temporarily offline. Please try again later.",
           className: "bg-white text-black border-gray-200",
         })
         return
@@ -132,7 +143,7 @@ export default function TranslationPage() {
         <Card className="border border-border">
           <CardHeader>
             <CardTitle className="text-lg">Original Text</CardTitle>
-            <CardDescription>Enter English text to translate</CardDescription>
+            <CardDescription>Enter text in any language to translate</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -184,7 +195,7 @@ export default function TranslationPage() {
               </div>
 
               <Textarea
-                placeholder={`Enter ${languages.find(lang => lang.code === sourceLang)?.name || 'text'} to translate...`}
+                placeholder={`Enter text to translate...`}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 className="min-h-64 resize-none"
