@@ -30,27 +30,27 @@ export default function HumanizePage() {
 
     if (!inputText.trim()) {
       toast({
-        title: "❌ No Text Entered",
+        title: "No text entered",
         description: "Please enter some text to humanize.",
-        className: "border-red-200 bg-transparent text-red-800",
+        className: "bg-white text-black border-gray-200",
       })
       return
     }
 
     if (wordCount < 30) {
       toast({
-        title: "❌ Text Too Short",
+        title: "Text too short",
         description: `Text must be at least 30 words. Current: ${wordCount} words.`,
-        className: "border-orange-200 bg-transparent text-orange-800",
+        className: "bg-white text-black border-gray-200",
       })
       return
     }
 
     if (wordCount > 120) {
       toast({
-        title: "❌ Text Too Long",
+        title: "Text too long",
         description: `Text must be maximum 120 words. Current: ${wordCount} words.`,
-        className: "border-orange-200 bg-transparent text-orange-800",
+        className: "bg-white text-black border-gray-200",
       })
       return
     }
@@ -67,28 +67,30 @@ export default function HumanizePage() {
 
       setOutputText(data.data.humanizedText)
 
+      // Show method badge in toast
+      const method = data.data.method || 'AI'
       toast({
-        title: "✅ Text humanized",
-        description: "Your text has been converted to natural, human-like writing.",
-        className: "border-blue-200 bg-transparent text-blue-800",
+        title: "Text humanized",
+        description: `Rewritten using ${method.toUpperCase()}`,
+        className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
-      // Handle service unavailable
-      if (err.response?.status === 503 && err.response?.data?.error === 'ML_SERVICE_UNAVAILABLE') {
+      // Handle LLM unavailable
+      if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
         toast({
-          title: "⚠️ AI service is currently unavailable",
-          description: "Please try again later.",
-          className: "border-red-200 bg-transparent text-red-800",
+          title: "LLM service unavailable",
+          description: "Please ensure Ollama is running with llama3 or mistral model.",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
 
-      // Handle unsupported language
-      if (err.response?.data?.error === 'LANGUAGE_NOT_SUPPORTED') {
+      // Handle ML service unavailable
+      if (err.response?.status === 503) {
         toast({
-          title: "🚫 Language Not Supported",
-          description: "The selected language is not supported for text humanization.",
-          className: "border-orange-200 bg-transparent text-orange-800",
+          title: "AI service unavailable",
+          description: "Please try again later.",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
@@ -96,9 +98,9 @@ export default function HumanizePage() {
       // Handle feature disabled
       if (err.response?.status === 403) {
         toast({
-          title: "🚫 Feature Disabled",
+          title: "Feature disabled",
           description: "This feature is currently disabled by the administrator.",
-          className: "border-orange-200 bg-transparent text-orange-800",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
@@ -107,9 +109,9 @@ export default function HumanizePage() {
       const errorMessage = err.response?.data?.message || "Failed to humanize text. Please try again."
       setError(errorMessage)
       toast({
-        title: "❌ Humanization Failed",
+        title: "Humanization failed",
         description: errorMessage,
-        className: "border-red-200 bg-transparent text-red-800",
+        className: "bg-white text-black border-gray-200",
         })
     } finally {
       setIsLoading(false)

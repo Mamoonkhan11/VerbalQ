@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
 import api from "@/lib/api"
 import { format } from "date-fns"
+import { Loader2, Trash2 } from "lucide-react"
 
 interface HistoryEntry {
   _id: string
@@ -23,7 +23,6 @@ export default function HistoryPage() {
   const { toast } = useToast()
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -34,7 +33,11 @@ export default function HistoryPage() {
         setHistory(data.data.history || [])
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || "Failed to load history"
-        setError(errorMessage)
+        toast({
+          title: "Error loading history",
+          description: errorMessage,
+          className: "bg-white text-black border-gray-200",
+        })
         console.error("History fetch error:", err)
       } finally {
         setIsLoading(false)
@@ -144,12 +147,6 @@ export default function HistoryPage() {
           </Button>
         )}
       </div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       <Card className="border border-border">
         <CardHeader>

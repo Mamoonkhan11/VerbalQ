@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -26,16 +25,18 @@ export default function PlagiarismPage() {
   const [plagiarismScore, setPlagiarismScore] = useState<number | null>(null)
   const [matches, setMatches] = useState<Match[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
 
   const handleCheck = async () => {
     if (!inputText.trim()) {
-      setError("Please enter some text to check")
+      toast({
+        title: "Input required",
+        description: "Please enter some text to check",
+        className: "bg-white text-black border-gray-200",
+      })
       return
     }
 
-    setError(null)
     setIsLoading(true)
 
     try {
@@ -57,9 +58,9 @@ export default function PlagiarismPage() {
       // Handle service unavailable
       if (err.response?.status === 503 && err.response?.data?.error === 'ML_SERVICE_UNAVAILABLE') {
         toast({
-          title: "⚠️ AI service is currently unavailable",
+          title: "AI service unavailable",
           description: "Please try again later.",
-          className: "border-red-200 bg-transparent text-red-800",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
@@ -67,9 +68,9 @@ export default function PlagiarismPage() {
       // Handle unsupported language
       if (err.response?.data?.error === 'LANGUAGE_NOT_SUPPORTED') {
         toast({
-          title: "🚫 Language Not Supported",
+          title: "Language not supported",
           description: "The selected language is not supported for plagiarism checking.",
-          className: "border-orange-200 bg-transparent text-orange-800",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
@@ -77,20 +78,19 @@ export default function PlagiarismPage() {
       // Handle feature disabled
       if (err.response?.status === 403) {
         toast({
-          title: "🚫 Feature Disabled",
+          title: "Feature disabled",
           description: "This feature is currently disabled by the administrator.",
-          className: "border-orange-200 bg-transparent text-orange-800",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
 
       // Handle other errors
       const errorMessage = err.response?.data?.message || "Failed to check plagiarism. Please try again."
-      setError(errorMessage)
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: errorMessage,
-        className: "border-red-200 bg-transparent text-red-800",
+        className: "bg-white text-black border-gray-200",
         })
     } finally {
       setIsLoading(false)
@@ -151,12 +151,6 @@ export default function PlagiarismPage() {
               className="min-h-64 resize-none"
               disabled={isLoading}
             />
-
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
 
             <Button onClick={handleCheck} disabled={isLoading} className="w-full">
               {isLoading ? (

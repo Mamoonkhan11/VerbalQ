@@ -42,7 +42,6 @@ export default function AdminDashboardPage() {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUsersLoading, setIsUsersLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -52,7 +51,11 @@ export default function AdminDashboardPage() {
         setStats(data.data)
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || "Failed to load statistics"
-        setError(errorMessage)
+        toast({
+          title: "Error loading statistics",
+          description: errorMessage,
+          className: "bg-white text-black border-gray-200",
+        })
         console.error("Stats fetch error:", err)
       } finally {
         setIsLoading(false)
@@ -66,6 +69,11 @@ export default function AdminDashboardPage() {
         const data = response.data
         setUsers(data.data.users)
       } catch (err: any) {
+        toast({
+          title: "Error loading users",
+          description: err.response?.data?.message || "Failed to load users",
+          className: "bg-white text-black border-gray-200",
+        })
         console.error("Users fetch error:", err)
       } finally {
         setIsUsersLoading(false)
@@ -74,7 +82,7 @@ export default function AdminDashboardPage() {
 
     fetchStats()
     fetchUsers()
-  }, [])
+  }, [toast])
 
   const handleBlockUser = async (userId: string, currentBlockedStatus: boolean) => {
     const action = currentBlockedStatus ? 'unblock' : 'block'
@@ -86,16 +94,16 @@ export default function AdminDashboardPage() {
         u._id === userId ? { ...u, isBlocked: !currentBlockedStatus } : u
       ))
       toast({
-        title: "✅ User updated",
+        title: "User updated",
         description: `User has been ${currentBlockedStatus ? 'unblocked' : 'blocked'} successfully.`,
-        className: "border-green-200 bg-transparent text-green-800",
+        className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "Failed to update user"
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: errorMessage,
-        className: "border-red-200 bg-transparent text-red-800",
+        className: "bg-white text-black border-gray-200",
       })
     }
   }
@@ -129,12 +137,6 @@ export default function AdminDashboardPage() {
             {user ? `Logged in as ${user.email}` : "Loading..."}
           </p>
         </div>
-
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
 
         {/* Stats Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-12">

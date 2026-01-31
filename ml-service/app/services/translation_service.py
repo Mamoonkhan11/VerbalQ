@@ -101,7 +101,8 @@ class TranslationService:
         return TranslationResponse(
             translated_text=translated_text.strip(),
             source_lang=src,
-            target_lang=tgt
+            target_lang=tgt,
+            method="opus"
         )
 
     def get_supported_languages(self):

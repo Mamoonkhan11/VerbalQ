@@ -30,23 +30,7 @@ router.use(aiRateLimit);
  * @desc    Get list of supported languages
  * @access  Public (no auth required)
  */
-router.get('/languages', (req, res) => {
-  const supportedLanguages = [
-    { code: 'en', name: 'English' },
-    { code: 'hi', name: 'Hindi' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'ko', name: 'Korean' },
-    { code: 'ar', name: 'Arabic' },
-    { code: 'zh', name: 'Chinese' }
-  ];
-
-  res.json({
-    success: true,
-    languages: supportedLanguages
-  });
-});
+router.get('/languages', aiController.getLanguages);
 
 /**
  * @route   GET /api/ai/languages/translation

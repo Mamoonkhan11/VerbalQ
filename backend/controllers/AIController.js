@@ -341,6 +341,34 @@ class AIController {
     }
   });
 
+  getLanguages = asyncHandler(async (req, res) => {
+    try {
+      const mlClient = getMLClient();
+      const mlData = await mlClient.client.get('/languages');
+      
+      res.json(mlData.data);
+    } catch (error) {
+      console.error('Failed to fetch languages:', error.message);
+      // Fallback if ML service is down
+      const fallbackLanguages = [
+        { code: 'en', name: 'English' },
+        { code: 'hi', name: 'Hindi' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'ar', name: 'Arabic' },
+        { code: 'zh', name: 'Chinese' }
+      ];
+      
+      res.json({
+        success: true,
+        languages: fallbackLanguages,
+        message: 'Using fallback languages - ML service unavailable'
+      });
+    }
+  });
+
   /**
    * Get supported translation languages
    * GET /api/ai/languages/translation
@@ -353,10 +381,28 @@ class AIController {
       res.json(mlData.data);
     } catch (error) {
       console.error('Failed to fetch translation languages:', error.message);
-      // Fallback if ML service is down
-      res.status(503).json({
-        success: false,
-        message: 'Translation service language list is temporarily unavailable'
+      // Fallback if ML service is down - provide common language pairs
+      const fallbackPairs = [
+        { from: 'en', to: 'es' },
+        { from: 'en', to: 'fr' },
+        { from: 'en', to: 'de' },
+        { from: 'en', to: 'hi' },
+        { from: 'en', to: 'ar' },
+        { from: 'en', to: 'zh' },
+        { from: 'en', to: 'ko' },
+        { from: 'es', to: 'en' },
+        { from: 'fr', to: 'en' },
+        { from: 'de', to: 'en' },
+        { from: 'hi', to: 'en' },
+        { from: 'ar', to: 'en' },
+        { from: 'zh', to: 'en' },
+        { from: 'ko', to: 'en' }
+      ];
+      
+      res.json({
+        success: true,
+        supportedPairs: fallbackPairs,
+        message: 'Using fallback language pairs - ML service unavailable'
       });
     }
   });

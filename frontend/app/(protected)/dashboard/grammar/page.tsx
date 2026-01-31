@@ -4,39 +4,30 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2 } from "lucide-react"
-import { Copy } from "lucide-react"
+import { Loader2, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguages } from "@/hooks/use-languages"
 import api from "@/lib/api"
 
-interface GrammarIssue {
-  start: number
-  end: number
-  message: string
-  suggestion: string
-}
-
 export default function GrammarPage() {
   const { toast } = useToast()
-  const { languages } = useLanguages()
+  const { languages, loading: languagesLoading } = useLanguages()
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
-  const [issues, setIssues] = useState<GrammarIssue[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
 
   const handleCheck = async () => {
     if (!inputText.trim()) {
-      setError("Please enter some text to check")
+      toast({
+        title: "Input required",
+        description: "Please enter some text to check",
+        className: "bg-white text-black border-gray-200",
+      })
       return
     }
 
-    setError(null)
     setIsLoading(true)
 
     try {
@@ -47,30 +38,31 @@ export default function GrammarPage() {
       const data = response.data
 
       setOutputText(data.data.correctedText)
-      setIssues(data.data.issues || [])
 
+      // Show method badge in toast
+      const method = data.data.method || 'AI'
       toast({
-        title: "✅ Grammar check completed",
-        description: `Found ${data.data.issues?.length || 0} issues`,
-        className: "border-blue-200 bg-transparent text-blue-800",
+        title: "Grammar check completed",
+        description: `Corrected using ${method.toUpperCase()}`,
+        className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
-      // Handle service unavailable
-      if (err.response?.status === 503 && err.response?.data?.error === 'ML_SERVICE_UNAVAILABLE') {
+      // Handle LLM unavailable
+      if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
         toast({
-          title: "⚠️ AI service is currently unavailable",
-          description: "Please try again later.",
-          className: "border-red-200 bg-transparent text-red-800",
+          title: "LLM service unavailable",
+          description: "Please ensure Ollama is running with llama3 or mistral model.",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
 
-      // Handle unsupported language
-      if (err.response?.data?.error === 'LANGUAGE_NOT_SUPPORTED') {
+      // Handle ML service unavailable
+      if (err.response?.status === 503) {
         toast({
-          title: "🚫 Language Not Supported",
-          description: "The selected language is not supported for grammar checking.",
-          className: "border-orange-200 bg-transparent text-orange-800",
+          title: "AI service unavailable",
+          description: "Please try again later.",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
@@ -78,20 +70,19 @@ export default function GrammarPage() {
       // Handle feature disabled
       if (err.response?.status === 403) {
         toast({
-          title: "🚫 Feature Disabled",
+          title: "Feature disabled",
           description: "This feature is currently disabled by the administrator.",
-          className: "border-orange-200 bg-transparent text-orange-800",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
 
       // Handle other errors
       const errorMessage = err.response?.data?.message || "Failed to check grammar. Please try again."
-      setError(errorMessage)
       toast({
-        title: "❌ Error",
+        title: "Error",
         description: errorMessage,
-        className: "border-red-200 bg-transparent text-red-800",
+        className: "bg-white text-black border-gray-200",
         })
     } finally {
       setIsLoading(false)
@@ -142,13 +133,7 @@ export default function GrammarPage() {
                 disabled={isLoading}
               />
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button onClick={handleCheck} disabled={isLoading} className="w-full">
+              <Button onClick={handleCheck} disabled={isLoading || languagesLoading} className="w-full">
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -187,28 +172,6 @@ export default function GrammarPage() {
                   </div>
                 )}
               </div>
-
-              {issues.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm text-foreground">Issues Found: {issues.length}</h4>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {issues.map((issue, idx) => (
-                      <div key={idx} className="text-sm bg-destructive/10 border border-destructive/20 rounded-md p-2">
-                        <p className="font-medium text-destructive mb-1">{issue.message}</p>
-                        <p className="text-muted-foreground">Suggestion: {issue.suggestion}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {outputText && issues.length === 0 && (
-                <div className="text-center py-6">
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    No grammar issues found
-                  </Badge>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>

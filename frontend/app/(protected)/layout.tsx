@@ -53,11 +53,12 @@ export default function ProtectedLayout({
     const mobile = window.innerWidth < 1024
     setIsMobile(mobile)
 
-    if (savedOpen !== null) {
-      setIsSidebarOpen(savedOpen === "true")
+    if (mobile) {
+      // On mobile devices, sidebar is fully invisible by default
+      setIsSidebarOpen(false)
     } else {
-      // On small screens, default sidebar closed
-      setIsSidebarOpen(!mobile)
+      // On desktop, use saved preference or default to visible
+      setIsSidebarOpen(savedOpen === "true" || savedOpen === null)
     }
 
     const handleResize = () => {
@@ -80,7 +81,7 @@ export default function ProtectedLayout({
     } catch (e) {
       /* ignore */
     }
-  }, [isSidebarOpen])
+  }, [isSidebarOpen]) // Fixed: consistent dependency array
 
   // Close sidebar with Escape when on mobile overlay
   useEffect(() => {
@@ -127,14 +128,27 @@ export default function ProtectedLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
-      {/* Sidebar */}
+      {/* Fixed hamburger button - desktop only (top left corner) */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleSidebar}
+        className={cn(
+          "fixed top-4 left-4 z-50 h-10 w-10 rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 hidden lg:flex",
+          isSidebarOpen && "left-64 opacity-0 pointer-events-none" // Hide when sidebar is open
+        )}
+      >
+        <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+      </Button>
+
+      {/* Sidebar - toggleable on all devices */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out",
-          isSidebarOpen ? "w-64" : "w-0 lg:w-16",
-          "lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out",
+          // Toggle on all devices using translate-x
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{ width: '16rem' }}
       >
         {/* Sidebar Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 dark:border-gray-800">
@@ -154,30 +168,20 @@ export default function ProtectedLayout({
             </div>
           </Link>
           
-          {/* Collapse button - desktop only */}
+          {/* Hamburger button inside sidebar */}
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className={cn(
-              "hidden lg:flex h-8 w-8 rounded-lg",
-              !isSidebarOpen && "lg:mx-auto"
-            )}
+            className="h-8 w-8 rounded-lg"
           >
-            {isSidebarOpen ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <Menu className="h-4 w-4" />
-            )}
+            <Menu className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          <div className={cn(
-            "mb-4",
-            !isSidebarOpen && "lg:hidden"
-          )}>
+          <div className="mb-4">
             <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-3 mb-2">
               AI Tools
             </h3>
@@ -197,29 +201,19 @@ export default function ProtectedLayout({
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                   isActive
                     ? "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 shadow-sm"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                  !isSidebarOpen && "lg:justify-center lg:px-2"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                 )}
               >
                 <Icon className={cn("h-5 w-5 shrink-0", isActive && "text-blue-600 dark:text-blue-400")} />
-                <span className={cn(
-                  "transition-opacity duration-200",
-                  !isSidebarOpen && "lg:opacity-0 lg:hidden"
-                )}>{item.label}</span>
+                <span>{item.label}</span>
               </Link>
             )
           })}
 
           {adminItems.length > 0 && (
             <>
-              <div className={cn(
-                "my-6 border-t border-gray-200 dark:border-gray-800",
-                !isSidebarOpen && "lg:mx-2"
-              )}></div>
-              <div className={cn(
-                "mb-4",
-                !isSidebarOpen && "lg:hidden"
-              )}>
+              <div className="my-6 border-t border-gray-200 dark:border-gray-800"></div>
+              <div className="mb-4">
                 <h3 className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider px-3 mb-2">
                   Admin
                 </h3>
@@ -238,15 +232,11 @@ export default function ProtectedLayout({
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                       isActive
                         ? "bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 shadow-sm"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800",
-                      !isSidebarOpen && "lg:justify-center lg:px-2"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                     )}
                   >
                     <Icon className={cn("h-5 w-5 shrink-0", isActive && "text-amber-600 dark:text-amber-400")} />
-                    <span className={cn(
-                      "transition-opacity duration-200",
-                      !isSidebarOpen && "lg:opacity-0 lg:hidden"
-                    )}>{item.label}</span>
+                    <span>{item.label}</span>
                   </Link>
                 )
               })}

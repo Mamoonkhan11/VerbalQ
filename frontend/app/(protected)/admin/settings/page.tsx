@@ -29,7 +29,6 @@ export default function AdminSettingsPage() {
   const [originalSettings, setOriginalSettings] = useState<AppSettings>(settings)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -41,7 +40,11 @@ export default function AdminSettingsPage() {
         setOriginalSettings(fetchedSettings)
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || "Failed to load settings"
-        setError(errorMessage)
+        toast({
+          title: "Error loading settings",
+          description: errorMessage,
+          className: "bg-white text-black border-gray-200",
+        })
         console.error("Settings fetch error:", err)
       } finally {
         setIsLoading(false)
@@ -49,7 +52,7 @@ export default function AdminSettingsPage() {
     }
 
     fetchSettings()
-  }, [])
+  }, [toast])
 
   const handleSettingChange = (key: keyof AppSettings, value: boolean) => {
     setSettings(prev => ({ ...prev, [key]: value }))
@@ -64,16 +67,16 @@ export default function AdminSettingsPage() {
       const data = response.data
       setOriginalSettings(settings)
       toast({
-        title: "✅ Settings saved",
+        title: "Settings saved",
         description: "Application settings have been updated successfully.",
-        className: "border-green-200 bg-transparent text-green-800",
+        className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || "Failed to save settings"
       toast({
-        title: "❌ Error",
+        title: "Error saving settings",
         description: errorMessage,
-        className: "border-red-200 bg-transparent text-red-800",
+        className: "bg-white text-black border-gray-200",
       })
     } finally {
       setIsSaving(false)
@@ -99,12 +102,6 @@ export default function AdminSettingsPage() {
           <h1 className="text-3xl font-bold text-foreground mb-2">Application Settings</h1>
           <p className="text-muted-foreground">Configure feature availability and system settings</p>
         </div>
-
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
 
         <Card className="border border-border">
           <CardHeader>

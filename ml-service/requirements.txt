@@ -8,14 +8,8 @@ transformers
 torch
 sentencepiece
 sacremoses
-sentence-transformers
-scikit-learn
-nltk>
-
-# Grammar Checking
-language-tool-python
 
 # Additional utilities
 numpy
-scipy
+requests
 python-dotenv

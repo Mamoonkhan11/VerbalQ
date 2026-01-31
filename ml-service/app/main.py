@@ -17,7 +17,7 @@ import os
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
 from .routers import grammar, translation, humanize, plagiarism
-from .models.schemas import HealthResponse
+from .models.schemas import HealthResponse, LanguageResponse, TranslationLanguagesResponse
 
 
 # Create FastAPI application
@@ -61,6 +61,57 @@ async def health_check():
             "humanization": "BART",
             "plagiarism": "TF-IDF + Cosine Similarity"
         }
+    )
+
+
+@app.get("/languages", response_model=LanguageResponse)
+async def get_languages():
+    """
+    Get list of supported languages for all services.
+    """
+    languages = [
+        {"code": "en", "name": "English"},
+        {"code": "hi", "name": "Hindi"},
+        {"code": "fr", "name": "French"},
+        {"code": "de", "name": "German"},
+        {"code": "es", "name": "Spanish"},
+        {"code": "ko", "name": "Korean"},
+        {"code": "ar", "name": "Arabic"},
+        {"code": "zh", "name": "Chinese"}
+    ]
+    
+    return LanguageResponse(
+        success=True,
+        languages=languages
+    )
+
+
+@app.get("/translate/languages", response_model=TranslationLanguagesResponse)
+async def get_translation_languages():
+    """
+    Get supported translation language pairs.
+    """
+    # Common translation pairs
+    supported_pairs = [
+        {"from_lang": "en", "to_lang": "es"},
+        {"from_lang": "en", "to_lang": "fr"},
+        {"from_lang": "en", "to_lang": "de"},
+        {"from_lang": "en", "to_lang": "hi"},
+        {"from_lang": "en", "to_lang": "ar"},
+        {"from_lang": "en", "to_lang": "zh"},
+        {"from_lang": "en", "to_lang": "ko"},
+        {"from_lang": "es", "to_lang": "en"},
+        {"from_lang": "fr", "to_lang": "en"},
+        {"from_lang": "de", "to_lang": "en"},
+        {"from_lang": "hi", "to_lang": "en"},
+        {"from_lang": "ar", "to_lang": "en"},
+        {"from_lang": "zh", "to_lang": "en"},
+        {"from_lang": "ko", "to_lang": "en"}
+    ]
+    
+    return TranslationLanguagesResponse(
+        success=True,
+        supportedPairs=supported_pairs
     )
 
 

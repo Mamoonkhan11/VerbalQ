@@ -43,7 +43,7 @@ class GrammarIssue(BaseModel):
 
 class GrammarCheckResponse(BaseModel):
     corrected_text: str = Field(..., description="Text with grammar corrections applied")
-    issues: List[GrammarIssue] = Field(default_factory=list, description="List of grammar issues found")
+    method: str = Field(default="llm", description="Method used for correction (llm)")
 
 
 # Translation Schemas
@@ -69,6 +69,7 @@ class TranslationResponse(BaseModel):
     translated_text: str = Field(..., description="Translated text")
     source_lang: str = Field(..., description="Source language used")
     target_lang: str = Field(..., description="Target language used")
+    method: str = Field(default="opus", description="Method used for translation (opus)")
 
 
 # Humanization Schemas
@@ -87,6 +88,7 @@ class HumanizeRequest(BaseModel):
 class HumanizeResponse(BaseModel):
     rewritten_text: str = Field(..., description="Humanized version of the input text")
     tone: str = Field(..., description="Tone applied to the text")
+    method: str = Field(default="llm", description="Method used for humanization (llm)")
 
 
 # Plagiarism Detection Schemas
@@ -111,6 +113,30 @@ class PlagiarismCheckResponse(BaseModel):
     similarity_score: float = Field(..., ge=0.0, le=100.0, description="Overall similarity percentage")
     matched_sentences: List[MatchedSentence] = Field(default_factory=list, description="List of matched sentences")
     is_plagiarized: bool = Field(..., description="Whether text is considered plagiarized")
+
+
+# Language Response Schemas
+class LanguageInfo(BaseModel):
+    code: str
+    name: str
+
+
+class LanguageResponse(BaseModel):
+    success: bool
+    languages: List[LanguageInfo]
+
+
+class TranslationLanguagePair(BaseModel):
+    from_lang: str = Field(alias="from")
+    to_lang: str = Field(alias="to")
+    
+    class Config:
+        allow_population_by_field_name = True
+
+
+class TranslationLanguagesResponse(BaseModel):
+    success: bool
+    supportedPairs: List[TranslationLanguagePair]
 
 
 # Health Check Schema

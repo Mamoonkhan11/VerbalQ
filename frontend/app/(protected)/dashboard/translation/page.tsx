@@ -4,9 +4,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowRight, Languages } from "lucide-react"
+import { Loader2, ArrowRight, Copy, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguages, useTranslationLanguages } from "@/hooks/use-languages"
 import api from "@/lib/api"
@@ -14,13 +13,13 @@ import api from "@/lib/api"
 export default function TranslationPage() {
   const { toast } = useToast()
   const { languages } = useLanguages()
-  const { supportedPairs } = useTranslationLanguages()
+  const { supportedPairs, loading: pairsLoading } = useTranslationLanguages()
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [sourceLang, setSourceLang] = useState("en")
   const [targetLang, setTargetLang] = useState("es")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isCopied, setIsCopied] = useState(false)
 
   // Get available target languages based on selected source language
   const availableTargets = supportedPairs
@@ -36,12 +35,16 @@ export default function TranslationPage() {
 
   const handleTranslate = async () => {
     if (!inputText.trim()) {
-      setError("Please enter some text to translate")
+      toast({
+        title: "Input required",
+        description: "Please enter some text to translate",
+        className: "bg-white text-black border-gray-200",
+      })
       return
     }
 
-    setError(null)
     setIsLoading(true)
+    setIsCopied(false) // Reset copy state on new translation
 
     try {
       const response = await api.post("/api/ai/translate", {
@@ -56,9 +59,9 @@ export default function TranslationPage() {
         
         const targetLangName = languages.find(lang => lang.code === targetLang)?.name || targetLang
         toast({
-          title: " Translation completed",
+          title: "Translation completed",
           description: `Translated to ${targetLangName}`,
-          className: "border-blue-200 bg-transparent text-blue-800",
+          className: "bg-white text-black border-gray-200",
         })
       }
     } catch (err: any) {
@@ -67,31 +70,53 @@ export default function TranslationPage() {
       // Handle explicit error codes from backend
       if (errorData?.error === 'TRANSLATION_NOT_SUPPORTED') {
         toast({
-          variant: "destructive",
-          title: " Not Supported",
+          title: "Not supported",
           description: "This language pair is not currently supported.",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
 
       if (err.response?.status === 503) {
         toast({
-          variant: "destructive",
-          title: " Service Unavailable",
+          title: "Service unavailable",
           description: "The AI translation service is currently offline.",
+          className: "bg-white text-black border-gray-200",
         })
         return
       }
 
       const errorMessage = errorData?.message || "Failed to translate. Please try again."
-      setError(errorMessage)
       toast({
-        variant: "destructive",
-        title: " Error",
+        title: "Error",
         description: errorMessage,
+        className: "bg-white text-black border-gray-200",
       })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(outputText)
+      setIsCopied(true)
+      toast({
+        title: "Copied to clipboard",
+        description: "Translation copied successfully",
+        className: "bg-white text-black border-gray-200",
+      })
+      
+      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        setIsCopied(false)
+      }, 2000)
+    } catch (err) {
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy to clipboard",
+        className: "bg-white text-black border-gray-200",
+      })
     }
   }
 
@@ -166,15 +191,9 @@ export default function TranslationPage() {
                 disabled={isLoading}
               />
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
               <Button 
                 onClick={handleTranslate} 
-                disabled={isLoading || !inputText.trim() || availableTargets.length === 0} 
+                disabled={isLoading || !inputText.trim() || availableTargets.length === 0 || pairsLoading} 
                 className="w-full"
               >
                 {isLoading ? (
@@ -201,17 +220,23 @@ export default function TranslationPage() {
               <Textarea value={outputText} readOnly className="min-h-64 resize-none bg-muted" />
 
               {outputText && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 bg-transparent"
-                    onClick={() => {
-                      navigator.clipboard.writeText(outputText)
-                    }}
-                  >
-                    Copy Translation
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleCopy}
+                >
+                  {isCopied ? (
+                    <>
+                      <Check className="mr-2 h-4 w-4 text-green-600" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Copy Translation
+                    </>
+                  )}
+                </Button>
               )}
             </div>
           </CardContent>
