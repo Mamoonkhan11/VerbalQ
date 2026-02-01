@@ -115,6 +115,7 @@ export default function ProtectedLayout({
     { href: "/dashboard/translation", label: "Translation", icon: Languages },
     { href: "/dashboard/humanize", label: "Humanize Text", icon: Zap },
     { href: "/dashboard/plagiarism", label: "Plagiarism Check", icon: AlertCircle },
+    { href: "/dashboard/ai-detector", label: "AI Detector", icon: Zap },
     { href: "/dashboard/history", label: "History", icon: History },
   ]
 

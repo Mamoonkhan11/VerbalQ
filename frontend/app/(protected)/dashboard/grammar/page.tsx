@@ -51,7 +51,7 @@ export default function GrammarPage() {
       if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
         toast({
           title: "LLM service unavailable",
-          description: "Please ensure Ollama is running with llama3 or mistral model.",
+          description: "Please ensure Ollama is running with mistral model.",
           className: "bg-white text-black border-gray-200",
         })
         return

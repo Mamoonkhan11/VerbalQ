@@ -102,6 +102,30 @@ const validateHumanization = [
     .notEmpty()
     .withMessage('Text is required for humanization'),
 
+  body('language')
+    .optional()
+    .isLength({ min: 2, max: 5 })
+    .withMessage('Language must be a valid language code'),
+
+  body('tone')
+    .optional()
+    .isIn(['casual', 'professional', 'academic', 'creative'])
+    .withMessage('Tone must be one of: casual, professional, academic, creative'),
+
+  handleValidationErrors
+];
+
+/**
+ * Validation rules for AI text detection
+ */
+const validateAIDetection = [
+  body('text')
+    .trim()
+    .isLength({ min: 1, max: 5000 })
+    .withMessage('Text must be between 1 and 5,000 characters')
+    .notEmpty()
+    .withMessage('Text is required for AI detection'),
+
   handleValidationErrors
 ];
 
@@ -125,5 +149,6 @@ module.exports = {
   validateGrammarCheck,
   validateTranslation,
   validateHumanization,
+  validateAIDetection,
   validatePlagiarismCheck
 };

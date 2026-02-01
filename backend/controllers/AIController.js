@@ -212,7 +212,7 @@ class AIController {
       // Call ML service through client
       const mlData = await mlClient.humanize({
         text: text.trim(),
-        tone: 'casual', // Default tone, could be made configurable
+        tone: req.body.tone || 'casual', // Use tone from request or default
         language: language
       });
 
@@ -299,13 +299,14 @@ class AIController {
       });
 
       // Save to history and limit records
-      const resultSummary = `Plagiarism analysis completed. Score: ${mlData.similarity_score}%`;
+      const resultSummary = `Plagiarism analysis completed. Score: ${mlData.plagiarismScore}%`;
       await this.saveToHistoryAndLimit(req.user._id, 'plagiarism', text.trim(), resultSummary, {
-        plagiarismScore: mlData.similarity_score,
-        isPlagiarized: mlData.is_plagiarized,
+        plagiarismScore: mlData.plagiarismScore,
+        riskLevel: mlData.riskLevel,
         inputLength: text.length,
         language: language,
-        matchesCount: mlData.matched_sentences.length
+        matchesCount: mlData.matchedSentences.length,
+        totalSentences: mlData.totalSentences
       });
 
       res.json({
@@ -313,11 +314,12 @@ class AIController {
         message: 'Plagiarism check completed successfully',
         data: {
           text: text.trim(),
-          plagiarismScore: mlData.similarity_score,
-          isPlagiarized: mlData.is_plagiarized,
-          matches: mlData.matched_sentences,
+          plagiarismScore: mlData.plagiarismScore,
+          riskLevel: mlData.riskLevel,
+          matches: mlData.matchedSentences,
           language: language,
-          recommendation: mlData.is_plagiarized ? 'Consider rephrasing the content' : 'Content appears original'
+          totalSentences: mlData.totalSentences,
+          recommendation: mlData.plagiarismScore > 50 ? 'Consider rephrasing the content' : 'Content appears original'
         }
       });
 
@@ -435,6 +437,80 @@ class AIController {
       await History.deleteMany({ _id: { $in: recordIdsToDelete } });
     }
   };
+
+  /**
+   * AI text detection endpoint
+   * POST /api/ai/ai-detect
+   */
+  aiDetection = asyncHandler(async (req, res) => {
+    const { text } = req.body;
+
+    // Validate input
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Text is required and must be a non-empty string'
+      });
+    }
+
+    // Check if feature is enabled
+    const settings = await AppSettings.getOrCreate();
+    if (!settings.aiDetectionEnabled) {
+      return res.status(403).json({
+        success: false,
+        message: 'This feature is currently disabled by admin'
+      });
+    }
+
+    try {
+      // Get ML client instance
+      const mlClient = getMLClient();
+
+      // Call ML service through client
+      const mlData = await mlClient.aiDetection({
+        text: text.trim()
+      });
+
+      // Save to history and limit records
+      await this.saveToHistoryAndLimit(req.user._id, 'ai-detection', text.trim(), `AI: ${mlData.aiProbability}%`, {
+        aiProbability: mlData.aiProbability,
+        humanProbability: mlData.humanProbability,
+        label: mlData.label,
+        confidence: mlData.confidence,
+        inputLength: text.length
+      });
+
+      res.json({
+        success: true,
+        message: 'AI text detection completed successfully',
+        data: {
+          text: text.trim(),
+          aiProbability: mlData.aiProbability,
+          humanProbability: mlData.humanProbability,
+          label: mlData.label,
+          confidence: mlData.confidence
+        }
+      });
+
+    } catch (error) {
+      console.error('AI detection error:', error.message);
+
+      // Handle specific ML service errors
+      if (error.status) {
+        return res.status(error.status).json({
+          success: false,
+          error: error.data?.detail?.error || 'AI_DETECTION_ERROR',
+          message: error.message
+        });
+      }
+
+      // Return generic error for other issues
+      return res.status(500).json({
+        success: false,
+        message: 'An error occurred while processing your request.'
+      });
+    }
+  });
 }
 
 module.exports = new AIController();

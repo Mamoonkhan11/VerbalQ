@@ -27,7 +27,7 @@ class MLClient {
     // Create Axios instance with ML service configuration
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: 10000, // 10 seconds timeout for ML operations
+      timeout: 60000, // Increased to 30 seconds timeout for ML operations
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -126,10 +126,13 @@ class MLClient {
    */
   async humanize(data) {
     try {
+      console.log('Sending humanize request to ML service:', data);
       const response = await this.client.post('/humanize', data);
+      console.log('Received response from ML service:', response.status, response.data);
       return response.data;
     } catch (error) {
       console.error('Humanization failed:', error.message);
+      console.error('Error details:', error.response?.data || error);
       throw error;
     }
   }
@@ -147,6 +150,22 @@ class MLClient {
       return response.data;
     } catch (error) {
       console.error('Plagiarism check failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * AI text detection request
+   * @param {Object} data - Request data
+   * @param {string} data.text - Text to analyze for AI generation detection
+   * @returns {Promise<Object>} ML service response
+   */
+  async aiDetection(data) {
+    try {
+      const response = await this.client.post('/ai-detect/check', data);
+      return response.data;
+    } catch (error) {
+      console.error('AI detection failed:', error.message);
       throw error;
     }
   }

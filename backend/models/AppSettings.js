@@ -16,6 +16,10 @@ const appSettingsSchema = new mongoose.Schema({
   plagiarismEnabled: {
     type: Boolean,
     default: true
+  },
+  aiDetectionEnabled: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true

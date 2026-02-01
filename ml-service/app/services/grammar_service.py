@@ -1,8 +1,8 @@
 """
-Grammar checking service using local Ollama LLM.
+Grammar correction service using local Ollama LLM.
 
-This service uses a local LLM (llama3 or mistral) via Ollama
-to provide grammar correction for all languages.
+This service uses a local LLM (mistral) via Ollama
+to correct grammar in various languages.
 """
 
 from ..models.schemas import GrammarCheckRequest, GrammarCheckResponse

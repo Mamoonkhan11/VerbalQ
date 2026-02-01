@@ -1,7 +1,7 @@
 """
 Text humanization service using local Ollama LLM.
 
-This service uses a local LLM (llama3 or mistral) via Ollama
+This service uses a local LLM (mistral) via Ollama
 to rewrite text in different tones, making it sound more natural and human-like.
 """
 

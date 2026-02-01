@@ -116,6 +116,25 @@ class PlagiarismCheckResponse(BaseModel):
     totalSentences: int = Field(..., description="Total number of sentences in input text")
 
 
+# AI Detection Schemas
+class AIDetectionRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000, description="Text to analyze for AI generation detection")
+
+    @validator('text')
+    def validate_text(cls, v):
+        if not v.strip():
+            raise ValueError('Text cannot be empty or only whitespace')
+        return v.strip()
+
+
+class AIDetectionResponse(BaseModel):
+    success: bool = Field(default=True, description="Operation success status")
+    aiProbability: float = Field(..., ge=0.0, le=100.0, description="Probability that text is AI-generated (0-100%)")
+    humanProbability: float = Field(..., ge=0.0, le=100.0, description="Probability that text is human-written (0-100%)")
+    label: str = Field(..., description="Classification label: 'AI' or 'Human'")
+    confidence: str = Field(..., description="Confidence level: 'Low', 'Medium', or 'High'")
+
+
 # Language Response Schemas
 class LanguageInfo(BaseModel):
     code: str

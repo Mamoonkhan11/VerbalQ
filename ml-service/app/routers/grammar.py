@@ -1,5 +1,5 @@
 """
-Grammar checking router.
+Grammar correction router.
 
 Provides endpoints for checking and correcting grammar in text.
 """
@@ -8,23 +8,22 @@ from fastapi import APIRouter, HTTPException
 from ..services.grammar_service import grammar_service
 from ..models.schemas import GrammarCheckRequest, GrammarCheckResponse
 
+
 router = APIRouter(prefix="/grammar", tags=["grammar"])
 
 
 @router.post("/check", response_model=GrammarCheckResponse)
 async def check_grammar(request: GrammarCheckRequest):
     """
-    Check grammar and provide corrections for the input text using local LLM.
+    Check and correct grammar in provided text.
 
-    This endpoint uses Ollama (llama3/mistral) to analyze and correct:
-    - Grammatical errors
+    This endpoint uses Ollama (mistral) to analyze and correct:
     - Spelling mistakes
-    - Style issues
-    - Punctuation problems
+    - Grammar errors
+    - Punctuation issues
+    - Syntax problems
 
-    Supports all languages that the LLM can handle.
-
-    Returns the corrected text.
+    Supports multiple languages.
     """
     try:
         result = grammar_service.check_grammar(request)
@@ -48,12 +47,22 @@ async def check_grammar(request: GrammarCheckRequest):
                 "message": error_msg
             }
         )
+    except ConnectionError as e:
+        # Handle direct ConnectionError (e.g., when Ollama is down)
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "success": False,
+                "error": "LLM_UNAVAILABLE",
+                "message": "Local LLM service is unavailable. Please ensure Ollama is running."
+            }
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail={
                 "success": False,
                 "error": "SERVICE_ERROR",
-                "message": f"Grammar checking failed: {str(e)}"
+                "message": f"Grammar correction failed: {str(e)}"
             }
         )

@@ -168,10 +168,10 @@ class PlagiarismService:
                 # Check if similarity exceeds threshold
                 if best_similarity >= MEDIUM_THRESHOLD:
                     matched_count += 1
-                    matched_sentences.append({
-                        "text": self.corpus_sentences[best_match_idx],
-                        "similarity": float(best_similarity)
-                    })
+                    matched_sentences.append(MatchedSentence(
+                        text=self.corpus_sentences[best_match_idx],
+                        similarity=float(best_similarity)
+                    ))
 
             # Calculate plagiarism score
             plagiarism_score = (matched_count / total_sentences) * 100 if total_sentences > 0 else 0

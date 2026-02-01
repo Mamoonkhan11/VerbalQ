@@ -16,7 +16,7 @@ import os
 # Disable Hugging Face symlinks warning on Windows
 os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 
-from .routers import grammar, translation, humanize, plagiarism
+from .routers import grammar, translation, humanize, plagiarism, ai_detection
 from .models.schemas import HealthResponse, LanguageResponse, TranslationLanguagesResponse
 
 
@@ -43,6 +43,7 @@ app.include_router(grammar.router)
 app.include_router(translation.router)
 app.include_router(humanize.router)
 app.include_router(plagiarism.router)
+app.include_router(ai_detection.router)
 
 
 @app.get("/health", response_model=HealthResponse)

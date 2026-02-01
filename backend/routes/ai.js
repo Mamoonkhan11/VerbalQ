@@ -7,6 +7,7 @@ const {
   validateGrammarCheck,
   validateTranslation,
   validateHumanization,
+  validateAIDetection,
   validatePlagiarismCheck
 } = require('../middleware/validation');
 
@@ -59,6 +60,13 @@ router.post('/translate', auth, validateTranslation, aiController.translateText)
  * @access  Private (requires authentication)
  */
 router.post('/humanize', auth, validateHumanization, aiController.humanizeText);
+
+/**
+ * @route   POST /api/ai/ai-detect
+ * @desc    Detect if text is AI-generated or human-written
+ * @access  Private (requires authentication)
+ */
+router.post('/ai-detect', auth, validateAIDetection, aiController.aiDetection);
 
 /**
  * @route   POST /api/ai/plagiarism

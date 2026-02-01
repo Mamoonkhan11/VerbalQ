@@ -2,24 +2,25 @@
 Ollama LLM client for grammar correction and humanization.
 
 This service uses a local Ollama server to perform grammar correction
-and text humanization using LLMs (llama3 or mistral).
+and text humanization using LLMs (mistral).
 """
 
 import requests
 from typing import Dict, Optional
 import json
+from ..config import OLLAMA_URL, OLLAMA_MODEL
 
 
 class OllamaClient:
     """Client for interacting with local Ollama LLM server."""
 
-    def __init__(self, base_url: str = "http://localhost:11434", model: str = "llama3"):
+    def __init__(self, base_url: str = OLLAMA_URL, model: str = OLLAMA_MODEL):
         """
         Initialize Ollama client.
         
         Args:
             base_url: Ollama server URL
-            model: Default model to use (llama3 or mistral)
+            model: Default model to use (mistral)
         """
         self.base_url = base_url.rstrip('/')
         self.model = model
@@ -80,7 +81,7 @@ class OllamaClient:
         except requests.exceptions.Timeout:
             raise RuntimeError("LLM generation timeout - request took too long")
         except requests.exceptions.ConnectionError:
-            raise ConnectionError("Cannot connect to Ollama server at {self.base_url}")
+            raise ConnectionError(f"Cannot connect to Ollama server at {self.base_url}")
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {str(e)}")
     
@@ -164,7 +165,7 @@ Rewritten text:"""
             humanized = humanized[1:-1]
             
         return humanized
-    
+
     def translate_text(self, text: str, source_lang: str, target_lang: str) -> str:
         """
         Translate text using LLM fallback.
@@ -208,3 +209,4 @@ Return ONLY translated text."""
 
 # Global Ollama client instance
 ollama_client = OllamaClient()
+print("Using Ollama model:", OLLAMA_MODEL)

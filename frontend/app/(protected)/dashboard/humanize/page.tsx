@@ -61,7 +61,8 @@ export default function HumanizePage() {
     try {
       const response = await api.post("/api/ai/humanize", {
         text: inputText,
-        language: selectedLanguage
+        language: selectedLanguage,
+        tone: "casual"
       })
       const data = response.data
 
@@ -75,11 +76,13 @@ export default function HumanizePage() {
         className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
+      console.error('Humanize error details:', err); // Debug logging
+      
       // Handle LLM unavailable
       if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
         toast({
           title: "LLM service unavailable",
-          description: "Please ensure Ollama is running with llama3 or mistral model.",
+          description: "Please ensure Ollama is running with mistral model.",
           className: "bg-white text-black border-gray-200",
         })
         return
@@ -105,6 +108,9 @@ export default function HumanizePage() {
         return
       }
 
+      // Log the raw error for debugging
+      console.log('Raw error response:', err.response?.data);
+      
       // Handle other errors
       const errorMessage = err.response?.data?.message || "Failed to humanize text. Please try again."
       setError(errorMessage)
@@ -112,7 +118,7 @@ export default function HumanizePage() {
         title: "Humanization failed",
         description: errorMessage,
         className: "bg-white text-black border-gray-200",
-        })
+      })
     } finally {
       setIsLoading(false)
     }

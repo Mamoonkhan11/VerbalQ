@@ -58,8 +58,20 @@ export default function PlagiarismPage() {
         className: "border-blue-200 bg-transparent text-blue-800",
       })
     } catch (err: any) {
+      console.error('Plagiarism check error details:', err); // Debug logging
+      
+      // Handle LLM unavailable (semantic plagiarism detection)
+      if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
+        toast({
+          title: "AI service unavailable",
+          description: "Please ensure Ollama is running with required models.",
+          className: "bg-white text-black border-gray-200",
+        })
+        return
+      }
+
       // Handle service unavailable
-      if (err.response?.status === 503 && err.response?.data?.error === 'ML_SERVICE_UNAVAILABLE') {
+      if (err.response?.status === 503) {
         toast({
           title: "AI service unavailable",
           description: "Please try again later.",
@@ -88,13 +100,16 @@ export default function PlagiarismPage() {
         return
       }
 
+      // Log the raw error for debugging
+      console.log('Raw error response:', err.response?.data);
+      
       // Handle other errors
       const errorMessage = err.response?.data?.message || "Failed to check plagiarism. Please try again."
       toast({
         title: "Error",
         description: errorMessage,
         className: "bg-white text-black border-gray-200",
-        })
+      })
     } finally {
       setIsLoading(false)
     }
