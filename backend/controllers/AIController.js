@@ -49,7 +49,7 @@ class AIController {
       await this.saveToHistoryAndLimit(req.user._id, 'grammar', text.trim(), mlData.corrected_text, {
         inputLength: text.length,
         outputLength: mlData.corrected_text.length,
-        issuesCount: mlData.issues.length,
+        issuesCount: 0, // Set to 0 since ML service doesn't return issues
         language: language
       });
 
@@ -59,7 +59,7 @@ class AIController {
         data: {
           originalText: text,
           correctedText: mlData.corrected_text,
-          issues: mlData.issues,
+          issues: [], // Set to empty array since ML service doesn't return issues
           language: language
         }
       });

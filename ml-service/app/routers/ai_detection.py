@@ -29,10 +29,8 @@ async def check_ai_detection(request: AIDetectionRequest):
     """
     try:
         result = ai_detection_service.detect_ai_text(request)
-        # Add success field to match response format
-        result_dict = result.dict()
-        result_dict['success'] = True
-        return AIDetectionResponse(**result_dict)
+        # The result is already an AIDetectionResponse object, return it directly
+        return result
     except ConnectionError as e:
         raise HTTPException(
             status_code=503,
