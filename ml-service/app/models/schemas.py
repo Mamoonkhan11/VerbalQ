@@ -43,6 +43,11 @@ class GrammarIssue(BaseModel):
 
 class GrammarCheckResponse(BaseModel):
     corrected_text: str = Field(..., description="Text with grammar corrections applied")
+    # Optional structured corrections list returned by LLM
+    corrections: List[dict] = Field(
+        default_factory=list,
+        description="List of individual corrections with incorrect text, correction, and explanation",
+    )
     method: str = Field(default="llm", description="Method used for correction (llm)")
 
 
@@ -118,13 +123,20 @@ class PlagiarismCheckResponse(BaseModel):
 
 # AI Detection Schemas
 class AIDetectionRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=5000, description="Text to analyze for AI generation detection")
+    text: str = Field(..., min_length=1, max_length=10000, description="Text to analyze for AI generation detection")
+    language: str = Field(default="en", description="Language code for AI detection (e.g., 'en', 'es', 'fr')")
 
     @validator('text')
     def validate_text(cls, v):
-        if not v.strip():
+        # Basic normalization: trim and collapse excessive whitespace
+        cleaned = ' '.join(v.split())
+        if not cleaned:
             raise ValueError('Text cannot be empty or only whitespace')
-        return v.strip()
+        return cleaned
+
+    @validator('language')
+    def normalize_language(cls, v):
+        return v.strip().lower()
 
 
 class AIDetectionResponse(BaseModel):

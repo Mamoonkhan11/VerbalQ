@@ -126,6 +126,11 @@ const validateAIDetection = [
     .notEmpty()
     .withMessage('Text is required for AI detection'),
 
+  body('language')
+    .optional()
+    .isIn(['en', 'es', 'fr', 'de', 'hi', 'ar', 'zh', 'ko'])
+    .withMessage('Language not supported'),
+
   handleValidationErrors
 ];
 

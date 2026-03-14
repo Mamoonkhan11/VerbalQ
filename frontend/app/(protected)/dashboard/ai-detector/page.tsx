@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Loader2 } from "lucide-react"
@@ -22,12 +23,26 @@ export default function AIDetectorPage() {
   const [inputText, setInputText] = useState("")
   const [result, setResult] = useState<AIDetectionResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState("en")
+
+  const countWords = (text: string) =>
+    text.trim().split(/\s+/).filter((w) => w.length > 0).length
 
   const handleDetect = async () => {
     if (!inputText.trim()) {
       toast({
-        title: "Please paste text first",
+        title: "Please paste text to analyze",
         description: "Enter some text to analyze for AI generation",
+        className: "bg-white text-black border-gray-200",
+      })
+      return
+    }
+
+    const wordCount = countWords(inputText)
+    if (wordCount < 50) {
+      toast({
+        title: "Text too short",
+        description: "Text must contain at least 50 words",
         className: "bg-white text-black border-gray-200",
       })
       return
@@ -38,20 +53,21 @@ export default function AIDetectorPage() {
 
     try {
       const response = await api.post("/api/ai/ai-detect", {
-        text: inputText
+        text: inputText,
+        language: selectedLanguage,
       })
       const data = response.data
 
       setResult({
-        aiProbability: data.data.aiProbability,
-        humanProbability: data.data.humanProbability,
-        label: data.data.label,
-        confidence: data.data.confidence
+        aiProbability: data.aiProbability,
+        humanProbability: data.humanProbability,
+        label: data.label,
+        confidence: data.confidence
       })
 
       toast({
         title: "AI detection completed",
-        description: `Analysis shows ${data.data.aiProbability}% AI probability`,
+        description: `Analysis shows ${data.aiProbability}% AI probability`,
         className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
@@ -126,6 +142,33 @@ export default function AIDetectorPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            <div className="flex gap-4 items-center">
+              <div className="flex-1">
+                <label htmlFor="language-select" className="block text-sm font-medium text-foreground mb-2">
+                  Language
+                </label>
+                <Select
+                  value={selectedLanguage}
+                  onValueChange={setSelectedLanguage}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger id="language-select">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="en">English</SelectItem>
+                    <SelectItem value="es">Spanish</SelectItem>
+                    <SelectItem value="fr">French</SelectItem>
+                    <SelectItem value="de">German</SelectItem>
+                    <SelectItem value="hi">Hindi</SelectItem>
+                    <SelectItem value="ar">Arabic</SelectItem>
+                    <SelectItem value="zh">Chinese</SelectItem>
+                    <SelectItem value="ko">Korean</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <Textarea
               placeholder="Paste text to analyze for AI generation..."
               value={inputText}
@@ -198,12 +241,28 @@ export default function AIDetectorPage() {
               {/* Summary */}
               <div className="bg-muted/50 rounded-lg p-4">
                 <h3 className="font-medium text-foreground mb-2">Analysis Summary</h3>
-                <p className="text-sm">
-                  The text shows <span className={getLabelColor(result.label)}>{result.label.toLowerCase()}</span> writing patterns with 
-                  <span className={getConfidenceColor(result.confidence)}> {result.confidence.toLowerCase()}</span> confidence. 
-                  AI probability: <span className="text-red-600 font-medium">{result.aiProbability}%</span>, 
-                  Human probability: <span className="text-green-600 font-medium">{result.humanProbability}%</span>.
-                </p>
+                <div className="text-sm space-y-1">
+                  <p>
+                    Result:{" "}
+                    <span className={getLabelColor(result.label)}>
+                      {result.label === "AI" ? "AI-generated" : "Human-written"}
+                    </span>
+                  </p>
+                  <p>
+                    Confidence:{" "}
+                    <span className={getConfidenceColor(result.confidence)}>
+                      {result.confidence}
+                    </span>
+                  </p>
+                  <p>
+                    AI probability:{" "}
+                    <span className="text-red-600 font-medium">{result.aiProbability}%</span>
+                  </p>
+                  <p>
+                    Human probability:{" "}
+                    <span className="text-green-600 font-medium">{result.humanProbability}%</span>
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>

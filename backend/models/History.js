@@ -8,7 +8,7 @@ const historySchema = new mongoose.Schema({
   },
   actionType: {
     type: String,
-    enum: ['grammar', 'translate', 'humanize', 'plagiarism'],
+    enum: ['grammar', 'translate', 'humanize', 'plagiarism', 'ai-detection'],
     required: [true, 'Action type is required']
   },
   inputText: {

@@ -45,23 +45,24 @@ class AIController {
         language: language
       });
 
+      const correctedText = mlData.corrected_text;
+      const corrections = mlData.corrections || [];
+
       // Save to history and limit records
-      await this.saveToHistoryAndLimit(req.user._id, 'grammar', text.trim(), mlData.corrected_text, {
+      await this.saveToHistoryAndLimit(req.user._id, 'grammar', text.trim(), correctedText, {
         inputLength: text.length,
-        outputLength: mlData.corrected_text.length,
-        issuesCount: 0, // Set to 0 since ML service doesn't return issues
+        outputLength: correctedText.length,
+        issuesCount: corrections.length,
         language: language
       });
 
+      // New flattened response format for frontend consumption
+      // NOTE: per product requirement, we do NOT return originalText here.
       res.json({
         success: true,
-        message: 'Grammar check completed successfully',
-        data: {
-          originalText: text,
-          correctedText: mlData.corrected_text,
-          issues: [], // Set to empty array since ML service doesn't return issues
-          language: language
-        }
+        correctedText,
+        corrections,
+        language
       });
 
     } catch (error) {
@@ -69,6 +70,14 @@ class AIController {
 
       // Handle specific ML service errors
       if (error.status) {
+        // ML service unavailable
+        if (error.status === 503) {
+          return res.status(503).json({
+            success: false,
+            message: 'Grammar service unavailable'
+          });
+        }
+
         return res.status(error.status).json({
           success: false,
           error: error.data?.detail?.error || 'GRAMMAR_ERROR',
@@ -233,6 +242,7 @@ class AIController {
           humanizedText: mlData.rewritten_text,
           tone: mlData.tone,
           language: language,
+          method: mlData.method || 'llm',
           changes: ['Improved sentence flow', 'Added natural transitions']
         }
       });
@@ -443,13 +453,22 @@ class AIController {
    * POST /api/ai/ai-detect
    */
   aiDetection = asyncHandler(async (req, res) => {
-    const { text } = req.body;
+    const { text, language = 'en' } = req.body;
 
     // Validate input
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Text is required and must be a non-empty string'
+      });
+    }
+
+    // Basic language validation (ML service performs strict validation too)
+    const supportedLanguages = ['en', 'es', 'fr', 'de', 'hi', 'ar', 'zh', 'ko'];
+    if (!language || typeof language !== 'string' || !supportedLanguages.includes(language)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Language not supported'
       });
     }
 
@@ -468,7 +487,8 @@ class AIController {
 
       // Call ML service through client
       const mlData = await mlClient.aiDetection({
-        text: text.trim()
+        text: text.trim(),
+        language
       });
 
       // Save to history and limit records
@@ -477,19 +497,19 @@ class AIController {
         humanProbability: mlData.humanProbability,
         label: mlData.label,
         confidence: mlData.confidence,
-        inputLength: text.length
+        inputLength: text.length,
+        language,
+        textLength: text.length
       });
 
+      // Flattened response shape for frontend
       res.json({
         success: true,
-        message: 'AI text detection completed successfully',
-        data: {
-          text: text.trim(),
-          aiProbability: mlData.aiProbability,
-          humanProbability: mlData.humanProbability,
-          label: mlData.label,
-          confidence: mlData.confidence
-        }
+        language,
+        aiProbability: mlData.aiProbability,
+        humanProbability: mlData.humanProbability,
+        label: mlData.label,
+        confidence: mlData.confidence
       });
 
     } catch (error) {
@@ -497,6 +517,14 @@ class AIController {
 
       // Handle specific ML service errors
       if (error.status) {
+        // ML service / Ollama unavailable (timeouts, connection errors, crashes)
+        if (error.status === 503) {
+          return res.status(503).json({
+            success: false,
+            message: 'AI detection service unavailable'
+          });
+        }
+
         return res.status(error.status).json({
           success: false,
           error: error.data?.detail?.error || 'AI_DETECTION_ERROR',

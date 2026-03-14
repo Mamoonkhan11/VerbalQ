@@ -35,15 +35,19 @@ class GrammarService:
             if not ollama_client.check_health():
                 raise ConnectionError("LLM service unavailable")
 
-            # Use LLM to correct grammar
-            corrected_text = ollama_client.correct_grammar(
+            # Use LLM to correct grammar with structured response
+            result = ollama_client.correct_grammar(
                 text=request.text,
-                language=request.language.value if hasattr(request.language, 'value') else request.language
+                language=request.language.value if hasattr(request.language, 'value') else request.language,
             )
+
+            corrected_text = result.get("corrected_text", request.text)
+            corrections = result.get("corrections") or []
 
             return GrammarCheckResponse(
                 corrected_text=corrected_text,
-                method="llm"
+                corrections=corrections,
+                method="llm",
             )
 
         except ConnectionError as e:
