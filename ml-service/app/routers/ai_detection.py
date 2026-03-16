@@ -86,11 +86,11 @@ async def check_ai_detection(request: AIDetectionRequest):
         error_msg = str(e)
         if "DETECTION_FAILED" in error_msg:
             raise HTTPException(
-                status_code=503,
+                status_code=500,
                 detail={
                     "success": False,
                     "error": "DETECTION_FAILED",
-                    "message": "Detection failed due to invalid LLM response.",
+                    "message": "Detection failed",
                 },
             )
         raise HTTPException(
@@ -99,15 +99,6 @@ async def check_ai_detection(request: AIDetectionRequest):
                 "success": False,
                 "error": "AI_DETECTION_ERROR",
                 "message": error_msg,
-            },
-        )
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "success": False,
-                "error": "LLM_ERROR",
-                "message": str(e),
             },
         )
     except Exception as e:
@@ -119,4 +110,3 @@ async def check_ai_detection(request: AIDetectionRequest):
                 "message": f"AI detection failed: {str(e)}",
             },
         )
-

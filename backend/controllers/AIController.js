@@ -242,7 +242,6 @@ class AIController {
           humanizedText: mlData.rewritten_text,
           tone: mlData.tone,
           language: language,
-          method: mlData.method || 'llm',
           changes: ['Improved sentence flow', 'Added natural transitions']
         }
       });

@@ -26,7 +26,7 @@ class OllamaClient:
         self.base_url = base_url.rstrip('/')
         self.model = model
         self.generate_url = f"{self.base_url}/api/generate"
-        self.timeout = 120  # 120 seconds timeout for LLM generation
+        self.timeout = 60  # 60 seconds timeout for LLM generation
         
     def check_health(self) -> bool:
         """Check if Ollama server is available."""
@@ -78,14 +78,13 @@ class OllamaClient:
                 raise RuntimeError("Ollama returned empty response")
             
             return generated_text
-        except requests.exceptions.Timeout as e:
-            raise TimeoutError("LLM generation timeout - request took too long") from e
-        except requests.exceptions.ConnectionError as e:
-            raise ConnectionError(f"Cannot connect to Ollama server at {self.base_url}") from e
-        except RuntimeError:
-            raise
+            
+        except requests.exceptions.Timeout:
+            raise RuntimeError("LLM generation timeout - request took too long")
+        except requests.exceptions.ConnectionError:
+            raise ConnectionError(f"Cannot connect to Ollama server at {self.base_url}")
         except Exception as e:
-            raise RuntimeError(f"LLM generation failed: {str(e)}") from e
+            raise RuntimeError(f"LLM generation failed: {str(e)}")
     
     def correct_grammar(self, text: str, language: str) -> Dict:
         """
@@ -199,16 +198,15 @@ Corrected text:"""
                 "corrections": [],
             }
     
-    def humanize_text(self, text: str, language: str, tone: str = "casual", strengthen_human_style: bool = False) -> str:
+    def humanize_text(self, text: str, language: str, tone: str = "casual") -> str:
         """
         Humanize text using LLM.
-
+        
         Args:
             text: Text to humanize
             language: Language code
             tone: Desired tone (casual, professional, academic, creative)
-            strengthen_human_style: Add stronger anti-template instructions
-
+            
         Returns:
             Humanized text
         """
@@ -216,43 +214,32 @@ Corrected text:"""
             "casual": "conversational and friendly, like talking to a friend",
             "professional": "formal and business-appropriate",
             "academic": "scholarly and formal with academic language",
-            "creative": "engaging and imaginative with creative flair",
+            "creative": "engaging and imaginative with creative flair"
         }
-
+        
         tone_desc = tone_instructions.get(tone, tone_instructions["casual"])
-
-        extra_rules = ""
-        if strengthen_human_style:
-            extra_rules = """
-- Vary sentence lengths and rhythm across the paragraph
-- Prefer concrete phrasing over generic filler
-- Avoid repetitive transition phrases and template-like structure
-- Keep wording slightly imperfect and natural, not overly polished
-- Keep length close to the original (about +/- 20%)
-- Return one coherent paragraph (not bullet points)
-"""
-
+        
         prompt = f"""Rewrite this text to sound natural and human-like in a {tone_desc} tone.
 
 Rules:
 - Preserve the original meaning
 - Use natural language
 - Make it sound authentic
-- Avoid robotic or overly uniform phrasing
 - Language: {language}
-{extra_rules}
 
 Original text: {text}
 
 Rewritten text:"""
-
+        
         humanized = self.generate(prompt)
-
+        
         # Clean up response
         humanized = humanized.strip()
-        if humanized.startswith("\"") and humanized.endswith("\""):
+        if humanized.startswith('"') and humanized.endswith('"'):
             humanized = humanized[1:-1]
-
+        if humanized.startswith("'") and humanized.endswith("'"):
+            humanized = humanized[1:-1]
+            
         return humanized
 
     def translate_text(self, text: str, source_lang: str, target_lang: str) -> str:
@@ -299,4 +286,3 @@ Return ONLY translated text."""
 # Global Ollama client instance
 ollama_client = OllamaClient()
 print("Using Ollama model:", OLLAMA_MODEL)
-

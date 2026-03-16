@@ -1,0 +1,646 @@
+# Cloud LLM API Integration Guide ☁️
+
+**Alternative to GPU hosting:** Use cloud-based LLM APIs instead of self-hosting Ollama.
+
+---
+
+## Why Consider This?
+
+### Self-Hosting Ollama (GPU Cloud)
+**Pros:**
+- ✅ Full control
+- ✅ No per-request costs
+- ✅ Privacy (your own server)
+
+**Cons:**
+- ❌ Complex setup
+- ❌ Expensive ($50-500/month)
+- ❌ Server management required
+- ❌ GPU availability issues
+- ❌ Manual updates/maintenance
+
+### Cloud APIs (OpenAI/HuggingFace)
+**Pros:**
+- ✅ Super simple setup (10 minutes!)
+- ✅ Very cheap for low usage ($5-20/month)
+- ✅ No server management
+- ✅ Always available
+- ✅ Auto-updated models
+- ✅ Better reliability
+
+**Cons:**
+- ❌ Per-request pricing (can add up)
+- ❌ Internet dependency
+- ❌ Less control over models
+
+---
+
+## Recommendation
+
+**For most deployments, use Cloud APIs!**
+
+Only self-host Ollama if:
+- You have > 10,000 requests/day
+- You need specific models not available via API
+- You have strict data privacy requirements
+- You already have GPU infrastructure
+
+---
+
+## Option 1: OpenAI API (Easiest ⭐)
+
+**Cost:** ~$0.002 per request  
+**Setup Time:** 10 minutes
+
+### Step 1: Get API Key (5 min)
+
+1. Go to https://platform.openai.com/
+2. Sign up/login
+3. Click profile → "API Keys"
+4. "Create new secret key"
+5. Copy and save: `sk-proj-xxxxxxxxxxxxx`
+
+### Step 2: Add Dependency
+
+**File:** `ml-service/requirements.txt`
+```txt
+openai==1.12.0
+# ... rest of your requirements
+```
+
+### Step 3: Modify Ollama Client
+
+**File:** `ml-service/app/services/ollama_client.py`
+
+Replace the entire `humanize_text` method:
+
+```python
+from openai import OpenAI
+import os
+
+class OllamaClient:
+    """Modified to use OpenAI API instead of self-hosted Ollama."""
+    
+    def __init__(self):
+        """Initialize OpenAI client."""
+        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.model = "gpt-3.5-turbo"  # Fast and cheap
+        
+    def check_health(self) -> bool:
+        """Check if OpenAI API is available."""
+        try:
+            self.client.models.list()
+            return True
+        except Exception:
+            return False
+    
+    def humanize_text(self, text: str, language: str, tone: str = "casual") -> str:
+        """Humanize text using OpenAI."""
+        
+        tone_instructions = {
+            "casual": "conversational and friendly, like talking to a friend",
+            "professional": "formal and business-appropriate",
+            "academic": "scholarly and formal with academic language",
+            "creative": "engaging and imaginative with creative flair"
+        }
+        
+        tone_desc = tone_instructions.get(tone, tone_instructions["casual"])
+        
+        prompt = f"""Rewrite this text to sound natural and human-like in a {tone_desc} tone.
+
+Rules:
+- Preserve the original meaning
+- Use natural language
+- Make it sound authentic
+- Language: {language}
+
+Original text: {text}
+
+Rewritten text:"""
+        
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            temperature=0.7,
+            max_tokens=500
+        )
+        
+        humanized = response.choices[0].message.content.strip()
+        
+        # Clean up response
+        if humanized.startswith('"') and humanized.endswith('"'):
+            humanized = humanized[1:-1]
+        if humanized.startswith("'") and humanized.endswith("'"):
+            humanized = humanized[1:-1]
+            
+        return humanized
+    
+    def correct_grammar(self, text: str, language: str) -> Dict:
+        """Correct grammar using OpenAI."""
+        
+        prompt = f"""You are a professional grammar correction system.
+
+Analyze the text and identify all grammar mistakes.
+
+Return ONLY JSON in this format:
+
+{{
+  "corrected_text": "...",
+  "corrections": [
+    {{
+      "incorrect": "...",
+      "correction": "...",
+      "explanation": "..."
+    }}
+  ]
+}}
+
+Rules:
+- Only include real grammar mistakes
+- Do not rewrite the sentence unnecessarily
+- Keep meaning unchanged
+- Return valid JSON only
+
+Text:
+\"\"\"{text}\"\"\""""
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            response_format={"type": "json_object"}
+        )
+        
+        result = json.loads(response.choices[0].message.content)
+        
+        return {
+            "corrected_text": result.get("corrected_text", text.strip()),
+            "corrections": result.get("corrections", [])
+        }
+    
+    def detect_ai_text(self, text: str, language: str) -> Dict:
+        """Detect AI-generated text using OpenAI."""
+        
+        prompt = f"""You are an AI text detection expert.
+
+Analyze whether the following text was written by a human or generated by an AI model.
+
+Consider these signals:
+- repetitive phrasing
+- overly perfect grammar
+- predictable sentence patterns
+- lack of personal tone
+- unnatural fluency
+
+Language: {language}
+
+Return ONLY JSON:
+
+{{
+  "ai_probability": number between 0 and 100,
+  "human_probability": number between 0 and 100,
+  "label": "AI" or "Human",
+  "confidence": "Low" or "Medium" or "High"
+}}
+
+Text:
+\"\"\"{text}\"\"\""""
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.0,
+            response_format={"type": "json_object"}
+        )
+        
+        return json.loads(response.choices[0].message.content)
+    
+    def translate_text(self, text: str, source_lang: str, target_lang: str) -> str:
+        """Translate text using OpenAI."""
+        
+        prompt = f"""Translate ONLY from {source_lang} to {target_lang}.
+Do not paraphrase. Do not add or remove meaning.
+Preserve exact intent.
+
+Text: {text}
+
+Return ONLY translated text."""
+        
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3
+        )
+        
+        return response.choices[0].message.content.strip()
+```
+
+### Step 4: Add Environment Variable
+
+**File:** `ml-service/.env`
+```env
+OPENAI_API_KEY=sk-proj-your-key-here
+OLLAMA_MODEL=gpt-3.5-turbo  # Just for reference
+PORT=8001
+```
+
+### Step 5: Deploy to Render
+
+1. Render Dashboard → ML Service → Environment
+2. Add `OPENAI_API_KEY`
+3. Save and Redeploy
+4. Test health endpoint
+
+**Done! No GPU needed!** 🎉
+
+---
+
+## Cost Comparison
+
+### OpenAI Pricing (GPT-3.5-Turbo)
+
+**Input:** $0.0005 / 1K tokens  
+**Output:** $0.0015 / 1K tokens
+
+**Example Request:**
+- Grammar check: ~500 tokens = $0.001
+- Humanize: ~800 tokens = $0.0015
+- Translation: ~600 tokens = $0.0012
+
+**Monthly Costs:**
+
+| Usage Level | Requests/Day | Monthly Cost |
+|-------------|--------------|--------------|
+| Light       | 100          | ~$5          |
+| Moderate    | 500          | ~$25         |
+| Heavy       | 2000         | ~$100        |
+| Very Heavy  | 10000        | ~$500        |
+
+**vs GPU Hosting:**
+- Break-even point: ~500 requests/day
+- Below that: OpenAI is cheaper
+- Above that: GPU might be worth it
+
+---
+
+## Option 2: Hugging Face Inference API
+
+**Cost:** Free tier + $0.01/request on paid  
+**Best for:** Open-source models, free tier testing
+
+### Setup (15 min)
+
+#### 1. Get Access Token
+
+1. Go to https://huggingface.co/
+2. Sign up
+3. Settings → Access Tokens
+4. Create token (write permission)
+5. Copy: `hf_xxxxxxxxxxxxxx`
+
+#### 2. Install Library
+
+```bash
+pip install huggingface_hub
+```
+
+Add to `requirements.txt`:
+```txt
+huggingface_hub==0.20.0
+```
+
+#### 3. Modify Client
+
+```python
+from huggingface_hub import InferenceClient
+
+class OllamaClient:
+    """Use Hugging Face Inference API."""
+    
+    def __init__(self):
+        self.client = InferenceClient(token=os.getenv("HF_API_TOKEN"))
+        self.model = "mistralai/Mistral-7B-Instruct-v0.1"
+        
+    def humanize_text(self, text: str, language: str, tone: str = "casual") -> str:
+        """Humanize using Mistral model."""
+        
+        prompt = f"""<s>[INST] Rewrite this text in a {tone} tone while preserving meaning:
+
+{text} [/INST]"""
+        
+        response = self.client.text_generation(
+            prompt=prompt,
+            model=self.model,
+            max_new_tokens=256,
+            temperature=0.7
+        )
+        
+        return response.strip()
+```
+
+#### 4. Set Environment Variable
+
+```env
+HF_API_TOKEN=hf_xxxxxxxxxxxxxx
+```
+
+---
+
+## Option 3: Anthropic Claude API
+
+**Cost:** ~$0.003 per request  
+**Best for:** High-quality responses
+
+### Setup
+
+1. Get API key: https://console.anthropic.com/
+2. Install: `pip install anthropic`
+3. Use Claude model:
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+def humanize_text(self, text: str, language: str, tone: str) -> str:
+    response = client.messages.create(
+        model="claude-3-haiku-20240307",
+        max_tokens=500,
+        messages=[{
+            "role": "user",
+            "content": f"Rewrite this text in a {tone} tone: {text}"
+        }]
+    )
+    return response.content[0].text
+```
+
+---
+
+## Hybrid Approach (Best of Both Worlds)
+
+Use cloud APIs now, migrate to self-hosted later:
+
+```python
+# In config.py
+USE_CLOUD_API = os.getenv("USE_CLOUD_API", "true").lower() == "true"
+
+if USE_CLOUD_API:
+    # Use OpenAI/HF
+    from .services.cloud_client import CloudClient as LLMClient
+else:
+    # Use self-hosted Ollama
+    from .services.ollama_client import OllamaClient
+```
+
+This lets you:
+- ✅ Start quickly with cloud APIs
+- ✅ Test and validate your app
+- ✅ Migrate to self-hosted when needed
+- ✅ Switch back if issues arise
+
+---
+
+## Performance Comparison
+
+| Method | Avg Response Time | Reliability | Monthly Cost |
+|--------|------------------|-------------|--------------|
+| OpenAI GPT-3.5 | 1-3 seconds | 99.9% | $5-50 |
+| Hugging Face | 2-5 seconds | 99.5% | $0-30 |
+| Claude | 2-4 seconds | 99.9% | $10-100 |
+| Self-hosted (GPU) | 5-15 seconds | 95-99% | $50-500 |
+
+**Winner:** Cloud APIs are faster AND cheaper for most use cases!
+
+---
+
+## Complete Migration Guide
+
+### From Ollama to OpenAI
+
+#### 1. Backup Current Code
+```bash
+git cp ml-service/app/services/ollama_client.py ollama_client_backup.py
+```
+
+#### 2. Install OpenAI
+```bash
+cd ml-service
+pip install openai
+```
+
+#### 3. Update Requirements
+Edit `requirements.txt`:
+```diff
+- # Remove if not needed for other features
+- transformers
+- torch
+- sentence-transformers
++ openai==1.12.0
+```
+
+#### 4. Replace Client Code
+Copy the OpenAI implementation from above.
+
+#### 5. Test Locally
+```bash
+cd ml-service
+python -c "from app.services.ollama_client import ollama_client; print(ollama_client.humanize_text('Test text', 'en', 'casual'))"
+```
+
+#### 6. Deploy
+```bash
+git commit -am "Migrate to OpenAI API"
+git push
+```
+
+#### 7. Monitor Costs
+- OpenAI Dashboard → Usage
+- Set up billing alerts
+
+---
+
+## Security Best Practices
+
+### 1. API Key Management
+
+**Never commit keys:**
+```gitignore
+# .gitignore
+.env
+*.key
+api_keys.txt
+```
+
+**Use environment variables:**
+```python
+api_key = os.getenv("OPENAI_API_KEY")
+```
+
+**Rotate regularly:**
+- Delete old keys monthly
+- Generate new ones
+- Update deployment
+
+### 2. Rate Limiting
+
+Protect against abuse:
+
+```python
+from fastapi import HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+
+@router.post("/humanize")
+@limiter.limit("10/minute")  # 10 requests per minute per IP
+async def humanize(request: Request, ...):
+    ...
+```
+
+### 3. Cost Controls
+
+Set spending limits:
+
+**OpenAI:**
+- Account → Billing → Spending limit
+- Set to $50/month for safety
+
+**Hugging Face:**
+- Settings → Billing → Hard limit
+
+---
+
+## Monitoring & Optimization
+
+### Track Usage
+
+```python
+# Add logging
+import logging
+
+logging.info(f"OpenAI tokens used: {response.usage.total_tokens}")
+```
+
+### Optimize Prompts
+
+Shorter prompts = less cost:
+
+**Before (400 tokens):**
+```
+"You are a helpful assistant that rewrites text to sound more human-like and natural. Please consider the tone, style, and context when rewriting."
+```
+
+**After (50 tokens):**
+```
+"Rewrite naturally: "
+```
+
+### Cache Responses
+
+For repeated requests:
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=1000)
+def cached_humanize(text_hash: str, tone: str) -> str:
+    # Check cache first
+    ...
+```
+
+---
+
+## Troubleshooting
+
+### Issue: API Key Not Working
+
+```
+Error: Invalid API key
+```
+
+**Solutions:**
+- Check key format (should start with `sk-proj-` or `hf_`)
+- Ensure no extra spaces in .env
+- Verify account has credits/billing set up
+- Wait 5 minutes after creating key
+
+### Issue: Rate Limit Exceeded
+
+```
+Error: Rate limit reached
+```
+
+**Solutions:**
+- Implement exponential backoff
+- Add retry logic
+- Upgrade API tier if needed
+- Cache frequent requests
+
+### Issue: High Costs
+
+**Solutions:**
+- Use GPT-3.5-turbo instead of GPT-4
+- Shorten prompts
+- Reduce max_tokens
+- Implement caching
+- Set hard spending limits
+
+---
+
+## Quick Decision Matrix
+
+### Choose Cloud API If:
+- ✅ < 5000 requests/day
+- ✅ Want simple setup
+- ✅ Don't want server management
+- ✅ Budget < $100/month
+- ✅ Need high reliability
+
+### Choose Self-Hosted If:
+- ✅ > 10000 requests/day
+- ✅ Have GPU expertise
+- ✅ Need specific custom models
+- ✅ Data privacy critical
+- ✅ Budget > $200/month
+
+---
+
+## My Recommendation for You
+
+**Start with OpenAI GPT-3.5-turbo!**
+
+Here's why:
+1. **Setup time:** 10 minutes vs 2 hours for GPU
+2. **Cost:** ~$20/month for moderate usage
+3. **Reliability:** 99.9% uptime
+4. **No maintenance:** OpenAI handles everything
+5. **Focus on your app:** Not server management
+
+You can always migrate to self-hosted later when you have:
+- Validated your product
+- Consistent user base
+- Predictable usage patterns
+- Budget for infrastructure
+
+---
+
+## Next Steps
+
+1. **Get OpenAI API key** (5 min)
+2. **Install openai library** (2 min)
+3. **Update ollama_client.py** (5 min)
+4. **Test locally** (3 min)
+5. **Deploy to Render** (5 min)
+6. **Monitor usage** (ongoing)
+
+Total: **20 minutes to production!**
+
+See: [QUICK_START_DEPLOYMENT.md](QUICK_START_DEPLOYMENT.md) for full deployment flow.
+
+---
+
+Good luck! Cloud APIs are the way to go for 90% of projects. 🚀

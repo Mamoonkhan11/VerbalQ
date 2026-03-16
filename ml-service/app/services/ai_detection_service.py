@@ -5,14 +5,12 @@ This service uses a local LLM (mistral) via Ollama
 to detect whether text is AI-generated or human-written based on writing style.
 """
 
-import json
-import re
-from typing import Dict
-
 import requests
-
-from ..config import OLLAMA_MODEL, OLLAMA_URL
+import json
+from typing import Dict, Optional
+import re
 from ..models.schemas import AIDetectionRequest, AIDetectionResponse
+from ..config import OLLAMA_URL, OLLAMA_MODEL
 
 
 class AIDetectionService:
@@ -25,94 +23,102 @@ class AIDetectionService:
     def detect_ai_text(self, request: AIDetectionRequest) -> AIDetectionResponse:
         """
         Detect if text is AI-generated or human-written using LLM classification.
-
+        
         Args:
             request: AIDetectionRequest with text to analyze
-
+            
         Returns:
             AIDetectionResponse with probabilities and classification
-
+            
         The detection process:
         1. Send text to Ollama LLM with classification prompt
         2. Parse structured JSON response
         3. Return probability scores and confidence level
         """
-
         def _coerce_number(value):
-            """Coerce a value into a float in [0, 100] when possible."""
-            if isinstance(value, (int, float)):
-                num = float(value)
-            elif isinstance(value, str):
-                cleaned = value.strip().replace("%", "")
-                m = re.search(r"[-+]?\d*\.?\d+", cleaned)
-                if not m:
-                    raise ValueError(f"Invalid numeric value: {value}")
-                num = float(m.group())
-            else:
-                raise ValueError(f"Invalid numeric type: {type(value)}")
+                """Coerce a value into a float in [0, 100] when possible."""
+                if isinstance(value, (int, float)):
+                    num = float(value)
+                elif isinstance(value, str):
+                    # handle "75%", "75.0", "75 / 100", etc.
+                    cleaned = value.strip()
+                    cleaned = cleaned.replace("%", "")
+                    # take first number found
+                    m = re.search(r"[-+]?\d*\.?\d+", cleaned)
+                    if not m:
+                        raise ValueError(f"Invalid numeric value: {value}")
+                    num = float(m.group())
+                else:
+                    raise ValueError(f"Invalid numeric type: {type(value)}")
 
-            return max(0.0, min(100.0, num))
+                # Clamp to [0, 100]
+                return max(0.0, min(100.0, num))
 
-        def _normalize_label(value: str) -> str:
-            v = str(value).strip().lower()
-            if v in ["ai", "a.i.", "ai-generated", "ai generated", "generated", "machine"]:
-                return "AI"
-            if v in ["human", "human-written", "human written", "person", "person-written"]:
+            def _normalize_label(value: str) -> str:
+                v = str(value).strip().lower()
+                if v in ["ai", "a.i.", "ai-generated", "ai generated", "generated", "machine"]:
+                    return "AI"
+                if v in ["human", "human-written", "human written", "person", "person-written"]:
+                    return "Human"
+                # Default heuristic: treat unknown as Human to avoid hard failures
                 return "Human"
-            return "Human"
 
-        def _normalize_confidence(value: str) -> str:
-            v = str(value).strip().lower()
-            if v.startswith("h"):
-                return "High"
-            if v.startswith("m"):
+            def _normalize_confidence(value: str) -> str:
+                v = str(value).strip().lower()
+                if v.startswith("h"):
+                    return "High"
+                if v.startswith("m"):
+                    return "Medium"
+                if v.startswith("l"):
+                    return "Low"
                 return "Medium"
-            if v.startswith("l"):
-                return "Low"
-            return "Medium"
 
         def _try_parse_json_candidates(text: str) -> Dict:
-            """
-            LLMs sometimes wrap JSON in prose or return slightly invalid JSON.
-            Try a few extraction strategies and parse the first valid object.
-            """
-            if not text or not text.strip():
-                raise ValueError("Empty LLM response")
+                """
+                LLMs sometimes wrap JSON in prose or return slightly invalid JSON.
+                Try a few extraction strategies and parse the first valid object.
+                """
+                if not text or not text.strip():
+                    raise ValueError("Empty LLM response")
 
-            candidates = []
-            candidates.extend(re.findall(r"\{[\s\S]*?\}", text))
+                candidates = []
 
-            start = text.find("{")
-            end = text.rfind("}")
-            if start != -1 and end != -1 and end > start:
-                candidates.append(text[start : end + 1])
+                # Strategy 1: smallest JSON object match (non-greedy)
+                candidates.extend(re.findall(r"\{[\s\S]*?\}", text))
 
-            def _sanitize(s: str) -> str:
-                s2 = s.strip()
-                if "'" in s2 and '"' not in s2:
-                    s2 = s2.replace("'", '"')
-                s2 = re.sub(r",(\s*[}\]])", r"\1", s2)
-                return s2
+                # Strategy 2: from first { to last } (greedy)
+                start = text.find("{")
+                end = text.rfind("}")
+                if start != -1 and end != -1 and end > start:
+                    candidates.append(text[start : end + 1])
 
-            last_err = None
-            for candidate in candidates:
-                try:
-                    return json.loads(_sanitize(candidate))
-                except Exception as e:
-                    last_err = e
-                    continue
+                def _sanitize(s: str) -> str:
+                    s2 = s.strip()
+                    # Replace single quotes with double quotes (common mistake)
+                    if "'" in s2 and '"' not in s2:
+                        s2 = s2.replace("'", '"')
+                    # Remove trailing commas before } or ]
+                    s2 = re.sub(r",(\s*[}\]])", r"\1", s2)
+                    return s2
 
-            raise ValueError(f"Invalid JSON response from LLM: {last_err}")
+                last_err = None
+                for c in candidates:
+                    try:
+                        return json.loads(_sanitize(c))
+                    except Exception as e:
+                        last_err = e
+                        continue
+                raise ValueError(f"Invalid JSON response from LLM: {last_err}")
 
         def _call_ollama_and_parse(req: AIDetectionRequest) -> Dict:
             """
             Call Ollama once and parse the JSON response.
-
             Raises:
               - ConnectionError for connectivity/LLM issues
               - RuntimeError for non-200 statuses (non-CUDA errors)
               - ValueError for JSON/formatting issues
             """
+            # Prepare the classification prompt (language-aware)
             prompt = f"""You are an AI text detection expert.
 
 Analyze whether the following text was written by a human or generated by an AI model.
@@ -143,22 +149,20 @@ Text:
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.0,
+                    "temperature": 0.0,  # deterministic output for reliability
                     "top_p": 0.9,
                 },
             }
 
-            try:
-                response = requests.post(
-                    f"{OLLAMA_URL}/api/generate",
-                    json=payload,
-                    timeout=110,
-                )
-            except requests.exceptions.RequestException as e:
-                # Normalize transport errors so the router can map to HTTP 503.
-                raise ConnectionError("LLM service unavailable") from e
+            response = requests.post(
+                f"{OLLAMA_URL}/api/generate",
+                json=payload,
+                timeout=110,  # allow more time than the Node proxy (LLM inference can be slow)
+            )
 
             if response.status_code != 200:
+                # Ollama can crash (often GPU/CUDA-related). Treat these as "unavailable"
+                # so the API returns 503 and the frontend can show a clear toast.
                 err_text = (response.text or "").lower()
                 if "cuda error" in err_text or "runner process has terminated" in err_text:
                     raise ConnectionError("LLM service unavailable")
@@ -166,16 +170,22 @@ Text:
 
             data = response.json()
             response_text = data.get("response", "")
+
+            # Extract + parse JSON from response (might have extra text before/after)
             return _try_parse_json_candidates(response_text)
 
         try:
+            # First attempt
             result = _call_ollama_and_parse(request)
         except ValueError:
+            # JSON/format error: retry once as requested
             try:
                 result = _call_ollama_and_parse(request)
             except ValueError as e:
+                # After second failure, signal detection failure upstream
                 raise ValueError("DETECTION_FAILED") from e
 
+        # Validate the result has required fields
         required_fields = ["ai_probability", "human_probability", "label", "confidence"]
         for field in required_fields:
             if field not in result:
@@ -184,6 +194,7 @@ Text:
         ai_prob = _coerce_number(result["ai_probability"])
         human_prob = _coerce_number(result["human_probability"])
 
+        # If the model gives inconsistent numbers, normalize to sum to 100
         total = ai_prob + human_prob
         if total > 0 and (total < 95 or total > 105):
             ai_prob = (ai_prob / total) * 100.0
@@ -192,6 +203,7 @@ Text:
         label = _normalize_label(result["label"])
         confidence = _normalize_confidence(result["confidence"])
 
+        # Create and return response
         return AIDetectionResponse(
             success=True,
             aiProbability=ai_prob,
@@ -200,7 +212,13 @@ Text:
             confidence=confidence,
         )
 
+        except requests.exceptions.ConnectionError:
+            raise ConnectionError("LLM service unavailable")
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON response from LLM")
+        except Exception as e:
+            raise RuntimeError(f"AI detection failed: {str(e)}")
+
 
 # Global service instance
 ai_detection_service = AIDetectionService()
-
