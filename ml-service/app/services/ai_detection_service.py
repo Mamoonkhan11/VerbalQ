@@ -54,24 +54,24 @@ class AIDetectionService:
                 # Clamp to [0, 100]
                 return max(0.0, min(100.0, num))
 
-            def _normalize_label(value: str) -> str:
-                v = str(value).strip().lower()
-                if v in ["ai", "a.i.", "ai-generated", "ai generated", "generated", "machine"]:
-                    return "AI"
-                if v in ["human", "human-written", "human written", "person", "person-written"]:
-                    return "Human"
-                # Default heuristic: treat unknown as Human to avoid hard failures
+        def _normalize_label(value: str) -> str:
+            v = str(value).strip().lower()
+            if v in ["ai", "a.i.", "ai-generated", "ai generated", "generated", "machine"]:
+                return "AI"
+            if v in ["human", "human-written", "human written", "person", "person-written"]:
                 return "Human"
+            # Default heuristic: treat unknown as Human to avoid hard failures
+            return "Human"
 
-            def _normalize_confidence(value: str) -> str:
-                v = str(value).strip().lower()
-                if v.startswith("h"):
-                    return "High"
-                if v.startswith("m"):
-                    return "Medium"
-                if v.startswith("l"):
-                    return "Low"
+        def _normalize_confidence(value: str) -> str:
+            v = str(value).strip().lower()
+            if v.startswith("h"):
+                return "High"
+            if v.startswith("m"):
                 return "Medium"
+            if v.startswith("l"):
+                return "Low"
+            return "Medium"
 
         def _try_parse_json_candidates(text: str) -> Dict:
                 """
@@ -211,13 +211,6 @@ Text:
             label=label,
             confidence=confidence,
         )
-
-        except requests.exceptions.ConnectionError:
-            raise ConnectionError("LLM service unavailable")
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON response from LLM")
-        except Exception as e:
-            raise RuntimeError(f"AI detection failed: {str(e)}")
 
 
 # Global service instance
