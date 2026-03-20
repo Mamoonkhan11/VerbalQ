@@ -27,7 +27,7 @@ class MLClient {
     // Create Axios instance with ML service configuration
     this.client = axios.create({
       baseURL: this.baseURL,
-      timeout: 120000, // 120s timeout for ML operations (LLM inference can be slow)
+      timeout: 180000, // 180s timeout for ML operations (LLM inference can be slow)
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

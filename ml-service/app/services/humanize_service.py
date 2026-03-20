@@ -63,6 +63,11 @@ class HumanizeService:
                         AIDetectionRequest(text=humanized_text, language=language)
                     )
                     
+                    # Validate detection response
+                    if not detection or not hasattr(detection, 'label'):
+                        print(f"AI detection returned invalid response, skipping calibration")
+                        break
+                    
                     is_flagged_ai = detection.label == "AI" or detection.aiProbability >= self.TARGET_AI_PROBABILITY
                     if not is_flagged_ai:
                         break
