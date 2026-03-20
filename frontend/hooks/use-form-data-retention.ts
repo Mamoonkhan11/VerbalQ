@@ -4,7 +4,10 @@ interface FormDataState {
   grammar?: {
     inputText: string;
     selectedLanguage: string;
+    outputText?: string;
+    corrections?: any[];
     timestamp: number;
+    isProcessing?: boolean;
   };
   translate?: {
     inputText: string;
@@ -12,11 +15,20 @@ interface FormDataState {
     sourceLang: string;
     targetLang: string;
     timestamp: number;
+    isProcessing?: boolean;
   };
   humanize?: {
     inputText: string;
+    outputText?: string;
     tone: string;
     timestamp: number;
+    isProcessing?: boolean;
+  };
+  aiDetector?: {
+    inputText: string;
+    result?: any;
+    timestamp: number;
+    isProcessing?: boolean;
   };
 }
 

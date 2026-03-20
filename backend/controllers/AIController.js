@@ -270,7 +270,7 @@ class AIController {
             const timeoutError = new Error('Humanization timed out');
             timeoutError.status = 503;
             reject(timeoutError);
-          }, 60000); // Increased to 60s for LLM inference
+          }, 90000); // Increased to 90s for LLM inference
         })
       ]);
 

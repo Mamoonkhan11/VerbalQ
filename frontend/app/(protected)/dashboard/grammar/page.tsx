@@ -20,6 +20,8 @@ interface GrammarCorrection {
 interface GrammarFormData {
   inputText: string
   selectedLanguage: string
+  outputText?: string
+  corrections?: GrammarCorrection[]
 }
 
 export default function GrammarPage() {
@@ -83,6 +85,14 @@ export default function GrammarPage() {
 
       setOutputText(data.data.correctedText || "")
       setCorrections(data.data.corrections || [])
+
+      // Save result to form data
+      saveFormData('grammar', {
+        inputText,
+        selectedLanguage,
+        outputText: data.data.correctedText,
+        corrections: data.data.corrections,
+      })
 
       toast({
         title: "Grammar check completed",

@@ -8,18 +8,57 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, ArrowRight, Copy, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguages, useTranslationLanguages } from "@/hooks/use-languages"
+import { useFormDataRetention } from "@/hooks/use-form-data-retention"
 import api from "@/lib/api"
+
+interface TranslateFormData {
+  inputText: string
+  outputText: string
+  sourceLang: string
+  targetLang: string
+}
 
 export default function TranslationPage() {
   const { toast } = useToast()
   const { languages } = useLanguages()
   const { supportedPairs, loading: pairsLoading } = useTranslationLanguages()
+  const { saveFormData, getFormData } = useFormDataRetention()
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [sourceLang, setSourceLang] = useState("en")
   const [targetLang, setTargetLang] = useState("es")
   const [isLoading, setIsLoading] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Restore form data if available
+  useEffect(() => {
+    if (isClient) {
+      const savedData = getFormData('translate') as TranslateFormData | null
+      if (savedData) {
+        setInputText(savedData.inputText)
+        setOutputText(savedData.outputText)
+        setSourceLang(savedData.sourceLang)
+        setTargetLang(savedData.targetLang)
+      }
+    }
+  }, [isClient])
+
+  // Save form data when inputs change
+  useEffect(() => {
+    if (inputText || outputText || sourceLang !== 'en' || targetLang !== 'es') {
+      saveFormData('translate', {
+        inputText,
+        outputText,
+        sourceLang,
+        targetLang,
+      })
+    }
+  }, [inputText, outputText, sourceLang, targetLang])
 
   // For hybrid system, all languages are available as targets since LLM fallback works for any pair
   // Exclude same language as source (no English to English translation)
@@ -57,6 +96,14 @@ export default function TranslationPage() {
 
       if (data.success) {
         setOutputText(data.data.translatedText)
+        
+        // Save result to form data
+        saveFormData('translate', {
+          inputText,
+          outputText: data.data.translatedText,
+          sourceLang,
+          targetLang,
+        })
         
         const targetLangName = languages.find(lang => lang.code === targetLang)?.name || targetLang
         const method = data.data.method || 'unknown'

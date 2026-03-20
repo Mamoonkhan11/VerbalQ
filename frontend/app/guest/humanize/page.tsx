@@ -83,9 +83,13 @@ export default function GuestHumanizePage() {
         incrementUsage()
       }
 
+      // Check if fallback was used
+      const method = data.data.method || 'AI'
+      const isFallback = method === 'fallback'
+      
       toast({
-        title: "Humanization Complete",
-        description: "Text made more natural",
+        title: isFallback ? "Text simplified (Quick Mode)" : "Humanization Complete",
+        description: isFallback ? "Used quick simplification for faster results" : "Text made more natural",
         className: "bg-white text-black border-gray-200",
       })
     } catch (error: any) {

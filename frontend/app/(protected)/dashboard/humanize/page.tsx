@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,16 +9,46 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguages } from "@/hooks/use-languages"
+import { useFormDataRetention } from "@/hooks/use-form-data-retention"
 import api from "@/lib/api"
+
+interface HumanizeFormData {
+  inputText: string
+  tone: string
+  outputText?: string
+}
 
 export default function HumanizePage() {
   const { toast } = useToast()
   const { languages } = useLanguages()
+  const { saveFormData, getFormData } = useFormDataRetention()
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Restore form data if available
+  useEffect(() => {
+    if (isClient) {
+      const savedData = getFormData('humanize') as HumanizeFormData | null
+      if (savedData) {
+        setInputText(savedData.inputText)
+      }
+    }
+  }, [isClient])
+
+  // Save form data when input changes
+  useEffect(() => {
+    if (inputText) {
+      saveFormData('humanize', { inputText, tone: 'casual' })
+    }
+  }, [inputText])
 
   // Helper function to count words
   const countWords = (text: string) => {
@@ -68,11 +98,22 @@ export default function HumanizePage() {
 
       setOutputText(data.data.humanizedText)
 
-      // Show method badge in toast
+      // Save result to form data
+      saveFormData('humanize', {
+        inputText,
+        tone: 'casual',
+        outputText: data.data.humanizedText,
+      })
+
+      // Show method badge in toast with fallback indication
       const method = data.data.method || 'AI'
+      const isFallback = method === 'fallback'
+      
       toast({
-        title: "Text humanized",
-        description: `Rewritten using ${method.toUpperCase()}`,
+        title: isFallback ? "Text simplified (Quick Mode)" : "Text humanized",
+        description: isFallback 
+          ? "Used quick simplification for faster results" 
+          : `Rewritten using ${method.toUpperCase()}`,
         className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {

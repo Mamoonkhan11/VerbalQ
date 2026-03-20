@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,7 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useFormDataRetention } from "@/hooks/use-form-data-retention"
 import api from "@/lib/api"
+
+interface AIDetectionFormData {
+  inputText: string
+  result?: AIDetectionResult
+}
 
 interface AIDetectionResult {
   aiProbability: number
@@ -20,10 +26,33 @@ interface AIDetectionResult {
 
 export default function AIDetectorPage() {
   const { toast } = useToast()
+  const { saveFormData, getFormData } = useFormDataRetention()
   const [inputText, setInputText] = useState("")
   const [result, setResult] = useState<AIDetectionResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Restore form data if available
+  useEffect(() => {
+    if (isClient) {
+      const savedData = getFormData('aiDetector') as AIDetectionFormData | null
+      if (savedData) {
+        setInputText(savedData.inputText)
+      }
+    }
+  }, [isClient])
+
+  // Save form data when input changes
+  useEffect(() => {
+    if (inputText) {
+      saveFormData('aiDetector', { inputText })
+    }
+  }, [inputText])
 
   const countWords = (text: string) =>
     text.trim().split(/\s+/).filter((w) => w.length > 0).length
@@ -63,6 +92,17 @@ export default function AIDetectorPage() {
         humanProbability: data.humanProbability,
         label: data.label,
         confidence: data.confidence
+      })
+
+      // Save result to form data
+      saveFormData('aiDetector', {
+        inputText,
+        result: {
+          aiProbability: data.aiProbability,
+          humanProbability: data.humanProbability,
+          label: data.label,
+          confidence: data.confidence
+        }
       })
 
       toast({

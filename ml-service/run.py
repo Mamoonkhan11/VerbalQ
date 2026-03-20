@@ -21,6 +21,4 @@ if __name__ == "__main__":
         reload=False, # Set reload to False for production/Render
         log_level="info",
         access_log=True,
-        timeout_keep_alive=120,  # Increase keep-alive timeout for long-running requests
-        timeout_notify=120  # Increase notification timeout
     )
