@@ -53,9 +53,9 @@ export default function PlagiarismPage() {
       setMatches(data.data.matchedSentences || [])
 
       toast({
-        title: "✅ Plagiarism check completed",
+        title: "Plagiarism Check Completed",
         description: `${riskLevel} risk • ${data.data.plagiarismScore}% similarity • ${totalSentences} sentences analyzed`,
-        className: "border-blue-200 bg-transparent text-blue-800",
+        className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
       console.error('Plagiarism check error details:', err); // Debug logging

@@ -41,9 +41,9 @@ export default function LoginPage() {
     try {
       if (!login || typeof login !== 'function') {
         toast({
-          variant: "destructive",
           title: "Authentication Error",
           description: "Authentication service is not available. Please refresh the page.",
+          className: "bg-white text-black border-gray-200",
         })
         setIsLoading(false)
         return
@@ -59,9 +59,9 @@ export default function LoginPage() {
         }
 
         toast({
-          title: " Login Successful",
+          title: "Login Successful",
           description: "Welcome back! Redirecting...",
-          className: "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200",
+          className: "bg-white text-black border-gray-200",
         })
 
         router.push(result.role === "admin" ? "/admin/dashboard" : "/dashboard")
@@ -70,9 +70,9 @@ export default function LoginPage() {
         const errorMessage = result.error || "Login failed. Please try again."
         setError(errorMessage)
         toast({
-          variant: "destructive",
-          title: " Login Failed",
+          title: "Login Failed",
           description: errorMessage,
+          className: "bg-white text-black border-gray-200",
         })
         setIsLoading(false)
       }
@@ -80,9 +80,9 @@ export default function LoginPage() {
       const errorMessage = err?.message || "An unexpected error occurred. Please try again."
       setError(errorMessage)
       toast({
-        variant: "destructive",
-        title: " Error",
+        title: "Login Error",
         description: errorMessage,
+        className: "bg-white text-black border-gray-200",
       })
       setIsLoading(false)
     }

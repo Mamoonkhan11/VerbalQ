@@ -36,13 +36,25 @@ export default function ForgotPasswordPage() {
         toast({
           title: "Reset Link Sent",
           description: "Check your email for instructions.",
-          className: "bg-green-50 border-green-200 text-green-800",
+          className: "bg-white text-black border-gray-200",
         })
       } else {
-        setError(data.message || "Failed to send reset link")
+        const errorMsg = data.message || "Failed to send reset link"
+        setError(errorMsg)
+        toast({
+          title: "Error",
+          description: errorMsg,
+          className: "bg-white text-black border-gray-200",
+        })
       }
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.")
+      const errorMsg = "An unexpected error occurred. Please try again."
+      setError(errorMsg)
+      toast({
+        title: "Error",
+        description: errorMsg,
+        className: "bg-white text-black border-gray-200",
+      })
     } finally {
       setIsLoading(false)
     }

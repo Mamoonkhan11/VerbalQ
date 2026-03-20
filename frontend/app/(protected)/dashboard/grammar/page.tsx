@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguages } from "@/hooks/use-languages"
+import { useFormDataRetention } from "@/hooks/use-form-data-retention"
 import api from "@/lib/api"
 
 interface GrammarCorrection {
@@ -16,14 +17,46 @@ interface GrammarCorrection {
   explanation: string
 }
 
+interface GrammarFormData {
+  inputText: string
+  selectedLanguage: string
+}
+
 export default function GrammarPage() {
   const { toast } = useToast()
   const { languages, loading: languagesLoading } = useLanguages()
+  const { saveFormData, getFormData } = useFormDataRetention()
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
   const [corrections, setCorrections] = useState<GrammarCorrection[]>([])
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Restore form data if available
+  useEffect(() => {
+    if (isClient) {
+      const savedData = getFormData('grammar') as GrammarFormData | null
+      if (savedData) {
+        setInputText(savedData.inputText)
+        setSelectedLanguage(savedData.selectedLanguage)
+      }
+    }
+  }, [isClient])
+
+  // Save form data when input or language changes
+  useEffect(() => {
+    if (inputText || selectedLanguage !== 'en') {
+      saveFormData('grammar', {
+        inputText,
+        selectedLanguage,
+      })
+    }
+  }, [inputText, selectedLanguage])
 
   const handleCheck = async () => {
     if (!inputText.trim()) {

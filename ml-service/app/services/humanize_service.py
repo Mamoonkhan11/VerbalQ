@@ -14,7 +14,7 @@ class HumanizeService:
     """Service for humanizing text using local LLM."""
 
     TARGET_AI_PROBABILITY = 45.0
-    MAX_CALIBRATION_PASSES = 1  # Reduced from 2 to avoid timeouts
+    MAX_CALIBRATION_PASSES = 0  # Disabled to prevent timeouts, single-pass humanization is faster
 
     def __init__(self):
         """Initialize the humanization service with LLM support."""

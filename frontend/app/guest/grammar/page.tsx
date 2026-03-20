@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useLanguages } from "@/hooks/use-languages"
 import { useAuth } from "@/lib/auth-context"
 import { useGuestUsage } from "@/hooks/use-guest-usage"
+import { useFormDataRetention } from "@/hooks/use-form-data-retention"
 import api from "@/lib/api"
 import Link from "next/link"
 import { SignupLimitModal } from "@/components/SignupLimitModal"
@@ -23,12 +24,18 @@ interface GrammarCorrection {
   explanation: string
 }
 
+interface GrammarFormData {
+  inputText: string
+  selectedLanguage: string
+}
+
 export default function GuestGrammarPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { languages, loading: languagesLoading } = useLanguages()
   const { user } = useAuth()
   const { incrementUsage, limitReached, identifier } = useGuestUsage()
+  const { saveFormData, getFormData } = useFormDataRetention()
   const [isClient, setIsClient] = useState(false)
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
@@ -40,6 +47,17 @@ export default function GuestGrammarPage() {
   useEffect(() => {
     setIsClient(true)
   }, [])
+
+  // Restore form data if available
+  useEffect(() => {
+    if (isClient) {
+      const savedData = getFormData('grammar') as GrammarFormData | null
+      if (savedData) {
+        setInputText(savedData.inputText)
+        setSelectedLanguage(savedData.selectedLanguage)
+      }
+    }
+  }, [isClient])
 
   // Redirect to dashboard if user is logged in
   useEffect(() => {
@@ -57,6 +75,24 @@ export default function GuestGrammarPage() {
     window.addEventListener('guest-limit-reached', handleLimitReached)
     return () => window.removeEventListener('guest-limit-reached', handleLimitReached)
   }, [])
+
+  // Save form data when input or language changes
+  useEffect(() => {
+    if (inputText || selectedLanguage !== 'en') {
+      saveFormData('grammar', {
+        inputText,
+        selectedLanguage,
+      })
+    }
+  }, [inputText, selectedLanguage])
+
+  // Clear saved form data after successful check
+  useEffect(() => {
+    if (outputText && corrections.length > 0) {
+      // Data will auto-expire after 1 minute
+      // We could also manually clear it here if needed
+    }
+  }, [outputText, corrections])
 
   const handleCheck = async () => {
     if (!inputText.trim()) {
@@ -99,9 +135,9 @@ export default function GuestGrammarPage() {
       }
 
       toast({
-        title: "✓ Grammar check complete",
+        title: "Grammar Check Complete",
         description: `${newCorrections.length} issues found`,
-        className: "bg-green-50 text-green-800 border-green-200",
+        className: "bg-white text-black border-gray-200",
       })
     } catch (error: any) {
       console.error('Grammar check error:', error)
@@ -111,14 +147,14 @@ export default function GuestGrammarPage() {
         setShowLimitModal(true)
         toast({
           title: "Free Limit Reached",
-          description: "You've used all 3 free checks. Please create an account to continue.",
-          variant: "destructive",
+          description: "You've used all 5 free checks. Please create an account to continue.",
+          className: "bg-white text-black border-gray-200",
         })
       } else {
         toast({
           title: "Error",
           description: error.message || "Failed to check grammar. Please try again.",
-          variant: "destructive",
+          className: "bg-white text-black border-gray-200",
         })
       }
     } finally {
@@ -129,9 +165,9 @@ export default function GuestGrammarPage() {
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText)
     toast({
-      title: "Copied!",
+      title: "Copied",
       description: "Text copied to clipboard",
-      className: "bg-blue-50 text-blue-800 border-blue-200",
+      className: "bg-white text-black border-gray-200",
     })
   }
 
@@ -278,7 +314,7 @@ export default function GuestGrammarPage() {
               About This Tool
             </h3>
             <p className="text-sm text-blue-800 dark:text-blue-200">
-              Our AI-powered grammar checker helps you write clearly and effectively by identifying grammar errors, punctuation mistakes, and style issues. This free tool allows up to 3 uses without signup. Create a free account for unlimited access!
+              Our AI-powered grammar checker helps you write clearly and effectively by identifying grammar errors, punctuation mistakes, and style issues. This free tool allows up to 5 uses without signup. Create a free account for unlimited access!
             </p>
           </div>
         </div>
@@ -289,7 +325,7 @@ export default function GuestGrammarPage() {
       <SignupLimitModal 
         open={showLimitModal || limitReached} 
         onOpenChange={setShowLimitModal}
-        usageCount={3}
+        usageCount={5}
       />
     </div>
   )

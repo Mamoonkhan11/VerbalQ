@@ -9,7 +9,7 @@ import { useGuestUsage } from "@/hooks/use-guest-usage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, ArrowRight, Sparkles, Globe, FileText, Lock, LogIn, UserPlus } from "lucide-react"
+import { CheckCircle2, ArrowRight, Sparkles, Globe, FileText, Lock, LogIn, UserPlus, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import { SignupLimitModal } from "@/components/SignupLimitModal"
 
@@ -67,11 +67,19 @@ export default function GuestDashboardPage() {
       icon: Sparkles,
       color: "from-purple-500 to-pink-600",
       href: "/guest/humanize",
-      disabled: false,
+      disabled: true,
+    },
+    {
+      name: "AI Detector",
+      description: "Detect AI-generated content with advanced AI analysis",
+      icon: ShieldCheck,
+      color: "from-indigo-500 to-violet-600",
+      href: "/guest/ai-detector",
+      disabled: true,
     },
     {
       name: "Plagiarism Detection",
-      description: "Check for originality and detect AI-generated content",
+      description: "Check for originality and detect potential plagiarism",
       icon: FileText,
       color: "from-orange-500 to-red-600",
       href: "/login?redirect=/dashboard/plagiarism",
@@ -95,18 +103,18 @@ export default function GuestDashboardPage() {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white">
               Try VerbalQ Free -{" "}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                3 Uses Limited
+                5 Free Uses
               </span>
             </h1>
             
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Use our AI-powered tools right now, no account needed. After 3 free uses, create a free account for unlimited access!
+              Use our AI-powered tools right now, no account needed. After 5 free uses, create a free account for unlimited access!
             </p>
             
             {/* Usage Counter */}
             <div className="inline-flex items-center gap-4 px-6 py-3 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-2">
-                {[1, 2, 3].map((use) => (
+                {[1, 2, 3, 4, 5].map((use) => (
                   <div
                     key={use}
                     className={`w-3 h-3 rounded-full transition-all ${
@@ -218,14 +226,14 @@ export default function GuestDashboardPage() {
                     <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div className="text-left">
                       <p className="font-semibold text-gray-900 dark:text-white">Unlimited Usage</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">No more 3-use limits</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">No more 5-use limits</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-lg">
                     <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div className="text-left">
                       <p className="font-semibold text-gray-900 dark:text-white">Save History</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Access past checks anytime</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Access past checks & form retention</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-lg">

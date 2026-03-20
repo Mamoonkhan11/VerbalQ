@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 const GUEST_USAGE_KEY = 'verbalq_guest_usage';
 const GUEST_IDENTIFIER_KEY = 'verbalq_guest_identifier';
+const GUEST_LIMIT = 5;
 
 export interface GuestUsageState {
   usageCount: number;
@@ -18,7 +19,7 @@ export function useGuestUsage() {
   const [usageState, setUsageState] = useState<GuestUsageState>({
     usageCount: 0,
     limitReached: false,
-    remainingUses: 3,
+    remainingUses: 5,
     identifier: null,
   });
 
@@ -40,8 +41,8 @@ export function useGuestUsage() {
         usageCount = parseInt(storedUsage, 10);
       }
 
-      const limitReached = usageCount >= 3;
-      const remainingUses = Math.max(0, 3 - usageCount);
+      const limitReached = usageCount >= GUEST_LIMIT;
+      const remainingUses = Math.max(0, GUEST_LIMIT - usageCount);
 
       setUsageState({
         usageCount,
@@ -65,8 +66,8 @@ export function useGuestUsage() {
       setUsageState(prev => ({
         ...prev,
         usageCount: newCount,
-        limitReached: newCount >= 3,
-        remainingUses: Math.max(0, 3 - newCount),
+        limitReached: newCount >= GUEST_LIMIT,
+        remainingUses: Math.max(0, GUEST_LIMIT - newCount),
       }));
     } catch (error) {
       console.error('Failed to increment usage:', error);
@@ -84,7 +85,7 @@ export function useGuestUsage() {
       setUsageState({
         usageCount: 0,
         limitReached: false,
-        remainingUses: 3,
+        remainingUses: GUEST_LIMIT,
         identifier: null,
       });
     } catch (error) {

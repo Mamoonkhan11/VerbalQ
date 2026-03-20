@@ -258,7 +258,7 @@ class AIController {
       // Get ML client instance
       const mlClient = getMLClient();
 
-      // Call ML service through client
+      // Call ML service through client with increased timeout for LLM inference
       const mlData = await Promise.race([
         mlClient.humanize({
           text: text.trim(),
@@ -270,7 +270,7 @@ class AIController {
             const timeoutError = new Error('Humanization timed out');
             timeoutError.status = 503;
             reject(timeoutError);
-          }, 30000); // Increased to 30s for LLM inference
+          }, 60000); // Increased to 60s for LLM inference
         })
       ]);
 

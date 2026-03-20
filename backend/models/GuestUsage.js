@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 /**
  * Guest Usage Tracking Model
  * 
- * Tracks usage of guests (non-authenticated users) to enforce the 3-use limit.
+ * Tracks usage of guests (non-authenticated users) to enforce the 5-use limit.
  * Automatically expires after 30 days of inactivity.
  */
 const GuestUsageSchema = new mongoose.Schema({
@@ -17,12 +17,12 @@ const GuestUsageSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0,
-    max: 3,
+    max: 5,
     validate: {
       validator: function(value) {
-        return value <= 3;
+        return value <= 5;
       },
-      message: 'Guest usage cannot exceed 3'
+      message: 'Guest usage cannot exceed 5'
     }
   },
   usageHistory: [{
@@ -59,7 +59,7 @@ GuestUsageSchema.pre('save', function(next) {
 
 // Instance method to check if limit reached
 GuestUsageSchema.methods.hasReachedLimit = function() {
-  return this.usageCount >= 3;
+  return this.usageCount >= 5;
 };
 
 // Instance method to increment usage

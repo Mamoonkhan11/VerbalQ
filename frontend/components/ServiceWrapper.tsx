@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useGuestUsage } from "@/hooks/use-guest-usage"
 import { SignupLimitModal } from "./SignupLimitModal"
@@ -52,8 +52,8 @@ export function ServiceWrapper({ children, serviceName }: ServiceWrapperProps) {
     if (!user) {
       incrementUsage()
       
-      // Show modal if this was the 3rd use
-      if (usageCount + 1 >= 3 && !hasShownModal) {
+      // Show modal if this was the 5th use
+      if (usageCount + 1 >= 5 && !hasShownModal) {
         setShowLimitModal(true)
         setHasShownModal(true)
       }

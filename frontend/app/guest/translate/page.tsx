@@ -89,9 +89,9 @@ export default function GuestTranslationPage() {
       }
 
       toast({
-        title: "✓ Translation complete",
+        title: "Translation Complete",
         description: "Text translated successfully",
-        className: "bg-blue-50 text-blue-800 border-blue-200",
+        className: "bg-white text-black border-gray-200",
       })
     } catch (error: any) {
       console.error('Translation error:', error)
@@ -100,14 +100,14 @@ export default function GuestTranslationPage() {
         setShowLimitModal(true)
         toast({
           title: "Free Limit Reached",
-          description: "You've used all 3 free checks. Please create an account to continue.",
-          variant: "destructive",
+          description: "You've used all 5 free checks. Please create an account to continue.",
+          className: "bg-white text-black border-gray-200",
         })
       } else {
         toast({
           title: "Error",
           description: error.message || "Failed to translate. Please try again.",
-          variant: "destructive",
+          className: "bg-white text-black border-gray-200",
         })
       }
     } finally {
@@ -118,9 +118,9 @@ export default function GuestTranslationPage() {
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText)
     toast({
-      title: "Copied!",
+      title: "Copied",
       description: "Text copied to clipboard",
-      className: "bg-blue-50 text-blue-800 border-blue-200",
+      className: "bg-white text-black border-gray-200",
     })
   }
 
@@ -267,7 +267,7 @@ export default function GuestTranslationPage() {
               About Translation
             </h3>
             <p className="text-sm text-purple-800 dark:text-purple-200">
-              Our AI-powered translation supports 8+ languages including Spanish, French, German, Chinese, and more. Free for up to 3 uses without signup. Create an account for unlimited translations!
+              Our AI-powered translation supports 8+ languages including Spanish, French, German, Chinese, and more. Free for up to 5 uses without signup. Create an account for unlimited translations!
             </p>
           </div>
         </div>
@@ -278,7 +278,7 @@ export default function GuestTranslationPage() {
       <SignupLimitModal 
         open={showLimitModal || limitReached} 
         onOpenChange={setShowLimitModal}
-        usageCount={3}
+        usageCount={5}
       />
     </div>
   )

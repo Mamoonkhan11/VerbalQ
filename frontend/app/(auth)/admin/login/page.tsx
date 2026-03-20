@@ -45,9 +45,9 @@ export default function AdminLoginPage() {
           const deniedMsg = "Access denied. You do not have admin privileges."
           setError(deniedMsg)
           toast({
-            variant: "destructive",
-            title: "🚫 Access Denied",
+            title: "Access Denied",
             description: deniedMsg,
+            className: "bg-white text-black border-gray-200",
           })
           setIsLoading(false)
           return
@@ -55,9 +55,9 @@ export default function AdminLoginPage() {
 
         // Success - admin login
         toast({
-          title: "✅ Admin Login Successful",
+          title: "Admin Login Successful",
           description: "Authorized access granted. Redirecting...",
-          className: "border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200",
+          className: "bg-white text-black border-gray-200",
         })
 
         router.push("/admin/dashboard")
@@ -65,9 +65,9 @@ export default function AdminLoginPage() {
         const errorMessage = result.error || "Login failed. Please try again."
         setError(errorMessage)
         toast({
-          variant: "destructive",
-          title: "❌ Login Failed",
+          title: "Login Failed",
           description: errorMessage,
+          className: "bg-white text-black border-gray-200",
         })
         setIsLoading(false)
       }
@@ -75,9 +75,9 @@ export default function AdminLoginPage() {
       const errorMessage = "An unexpected error occurred. Please try again."
       setError(errorMessage)
       toast({
-        variant: "destructive",
-        title: "⚠️ Error",
+        title: "Login Error",
         description: errorMessage,
+        className: "bg-white text-black border-gray-200",
       })
       setIsLoading(false)
     }

@@ -81,9 +81,9 @@ export default function RegisterFormContent({ fromLimit: initialFromLimit }: Reg
         await convertGuest(formData.name.trim(), formData.email.toLowerCase().trim(), formData.password)
         
         toast({
-          title: "✅ Account Created!",
+          title: "Account Created",
           description: "Your usage history has been preserved. Welcome to VerbalQ!",
-          className: "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200",
+          className: "bg-white text-black border-gray-200",
         })
         
         router.push("/dashboard")
@@ -102,14 +102,18 @@ export default function RegisterFormContent({ fromLimit: initialFromLimit }: Reg
         const data = await response.json()
 
         if (!response.ok) {
-          setError(data?.message || "Registration failed")
+          toast({
+            title: "Registration Failed",
+            description: data?.message || "Registration failed. Please try again.",
+            className: "bg-white text-black border-gray-200",
+          })
           return
         }
 
         toast({
-          title: "✅ Account Created",
+          title: "Account Created",
           description: "Welcome to VerbalQ! Redirecting to login...",
-          className: "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200",
+          className: "bg-white text-black border-gray-200",
         })
 
         setTimeout(() => {
@@ -118,7 +122,12 @@ export default function RegisterFormContent({ fromLimit: initialFromLimit }: Reg
       }
 
     } catch (err: any) {
-      setError(err?.response?.data?.message || "An unexpected error occurred")
+      const errorMessage = err?.response?.data?.message || "An unexpected error occurred"
+      toast({
+        title: "Registration Error",
+        description: errorMessage,
+        className: "bg-white text-black border-gray-200",
+      })
     } finally {
       setIsLoading(false)
     }

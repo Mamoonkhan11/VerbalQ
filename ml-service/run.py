@@ -10,11 +10,17 @@ if __name__ == "__main__":
     # We use that, or default to 8001 if running locally.
     port = int(os.environ.get("PORT", 8001))
     
+    # Log startup information for debugging
+    print(f"🚀 Starting ML Service on host=0.0.0.0 port={port}")
+    print(f"📊 Environment: {'Render (PORT=' + str(port) + ')' if os.environ.get('PORT') else 'Local (default port 8001)'}")
+    
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=port,  # Use the dynamic port
         reload=False, # Set reload to False for production/Render
         log_level="info",
-        access_log=True
+        access_log=True,
+        timeout_keep_alive=120,  # Increase keep-alive timeout for long-running requests
+        timeout_notify=120  # Increase notification timeout
     )

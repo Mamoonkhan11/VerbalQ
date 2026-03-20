@@ -84,9 +84,9 @@ export default function GuestHumanizePage() {
       }
 
       toast({
-        title: "✓ Humanization complete",
+        title: "Humanization Complete",
         description: "Text made more natural",
-        className: "bg-purple-50 text-purple-800 border-purple-200",
+        className: "bg-white text-black border-gray-200",
       })
     } catch (error: any) {
       console.error('Humanization error:', error)
@@ -95,15 +95,22 @@ export default function GuestHumanizePage() {
         setShowLimitModal(true)
         toast({
           title: "Free Limit Reached",
-          description: "You've used all 3 free checks. Please create an account to continue.",
-          variant: "destructive",
+          description: "You've used all 5 free checks. Please create an account to continue.",
+          className: "bg-white text-black border-gray-200",
+        })
+      } else if (error.response?.status === 503 && error.response?.data?.message?.includes('timed out')) {
+        // Handle timeout specifically
+        toast({
+          title: "Processing Timeout",
+          description: "The request took too long. Please try again or use shorter text.",
+          className: "bg-white text-black border-gray-200",
         })
       } else {
         const errorMessage = error.response?.data?.message || error.message || "Failed to humanize. Please try again."
         toast({
           title: "Error",
           description: errorMessage,
-          variant: "destructive",
+          className: "bg-white text-black border-gray-200",
         })
       }
     } finally {
@@ -114,9 +121,9 @@ export default function GuestHumanizePage() {
   const handleCopy = () => {
     navigator.clipboard.writeText(outputText)
     toast({
-      title: "Copied!",
+      title: "Copied",
       description: "Text copied to clipboard",
-      className: "bg-purple-50 text-purple-800 border-purple-200",
+      className: "bg-white text-black border-gray-200",
     })
   }
 
@@ -248,7 +255,7 @@ export default function GuestHumanizePage() {
               About Humanization
             </h3>
             <p className="text-sm text-pink-800 dark:text-pink-200">
-              Our AI humanizer transforms robotic AI-generated text into natural, engaging content that sounds authentically human. Free for up to 3 uses! Create an account for unlimited humanization.
+              Our AI humanizer transforms robotic AI-generated text into natural, engaging content that sounds authentically human. Free for up to 5 uses! Create an account for unlimited humanization.
             </p>
           </div>
         </div>
@@ -259,7 +266,7 @@ export default function GuestHumanizePage() {
       <SignupLimitModal 
         open={showLimitModal || limitReached} 
         onOpenChange={setShowLimitModal}
-        usageCount={3}
+        usageCount={5}
       />
     </div>
   )

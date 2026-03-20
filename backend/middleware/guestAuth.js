@@ -40,13 +40,13 @@ const guestAuth = async (req, res, next) => {
     }
 
     // Check if guest has reached the limit
-    if (guest.usageCount >= 3) {
+    if (guest.usageCount >= 5) {
       return res.status(403).json({
         success: false,
         message: 'GUEST_LIMIT_REACHED',
         data: {
           usageCount: guest.usageCount,
-          limit: 3,
+          limit: 5,
           requiresAuth: true,
           hint: 'Please create an account or sign in to continue using our services'
         }

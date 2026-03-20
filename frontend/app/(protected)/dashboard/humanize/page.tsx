@@ -82,8 +82,18 @@ export default function HumanizePage() {
       // Handle LLM unavailable
       if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
         toast({
-          title: "LLM service unavailable",
+          title: "Service Unavailable",
           description: "Please ensure Ollama is running with mistral model.",
+          className: "bg-white text-black border-gray-200",
+        })
+        return
+      }
+
+      // Handle timeout specifically
+      if (err.response?.status === 503 && errorMessage.includes('timed out')) {
+        toast({
+          title: "Processing Timeout",
+          description: "The request took too long. Please try again or use shorter text.",
           className: "bg-white text-black border-gray-200",
         })
         return
@@ -92,7 +102,7 @@ export default function HumanizePage() {
       // Handle ML service unavailable
       if (err.response?.status === 503) {
         toast({
-          title: "AI service unavailable",
+          title: "Service Unavailable",
           description: errorMessage,
           className: "bg-white text-black border-gray-200",
         })
@@ -101,7 +111,7 @@ export default function HumanizePage() {
 
       if (err.response?.status === 403 && errorMessage === "This feature is currently disabled by admin") {
         toast({
-          title: "Feature disabled",
+          title: "Feature Disabled",
           description: "This feature is currently disabled by the administrator.",
           className: "bg-white text-black border-gray-200",
         })
@@ -114,7 +124,7 @@ export default function HumanizePage() {
       // Handle other errors
       setError(errorMessage)
       toast({
-        title: "Humanization failed",
+        title: "Humanization Failed",
         description: errorMessage,
         className: "bg-white text-black border-gray-200",
       })
