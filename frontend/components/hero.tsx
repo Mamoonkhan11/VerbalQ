@@ -73,7 +73,7 @@ export default function Hero() {
                 size="lg"
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 group"
               >
-                <Link href="/login" className="flex items-center gap-2">
+                <Link href="/guest" className="flex items-center gap-2">
                   Get Started Free
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>

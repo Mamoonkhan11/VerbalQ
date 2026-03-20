@@ -31,6 +31,26 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Guest user tracking
+  isGuest: {
+    type: Boolean,
+    default: false
+  },
+  convertedFromGuest: {
+    type: Date,
+    default: null
+  },
+  // Usage history for both guests and registered users
+  usageHistory: [{
+    serviceType: {
+      type: String,
+      enum: ['grammar', 'translate', 'humanize', 'plagiarism']
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   resetPasswordToken: String,
   resetPasswordExpires: Date
 }, {

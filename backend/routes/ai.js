@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const aiController = require('../controllers/AIController');
 const auth = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
+const { guestAuth } = require('../middleware/guestAuth');
 const { aiRateLimit } = require('../middleware/rateLimit');
 const {
   validateGrammarCheck,
@@ -43,23 +45,23 @@ router.get('/languages/translation', aiController.getTranslationLanguages);
 /**
  * @route   POST /api/ai/grammar
  * @desc    Check grammar of provided text
- * @access  Private (requires authentication)
+ * @access  Public (guests can use up to 3 times)
  */
-router.post('/grammar', auth, validateGrammarCheck, aiController.grammarCheck);
+router.post('/grammar', optionalAuth, guestAuth, validateGrammarCheck, aiController.grammarCheck);
 
 /**
  * @route   POST /api/ai/translate
  * @desc    Translate text to target language
- * @access  Private (requires authentication)
+ * @access  Public (guests can use up to 3 times)
  */
-router.post('/translate', auth, validateTranslation, aiController.translateText);
+router.post('/translate', optionalAuth, guestAuth, validateTranslation, aiController.translateText);
 
 /**
  * @route   POST /api/ai/humanize
  * @desc    Humanize AI-generated text
- * @access  Private (requires authentication)
+ * @access  Public (guests can use up to 3 times)
  */
-router.post('/humanize', auth, validateHumanization, aiController.humanizeText);
+router.post('/humanize', optionalAuth, guestAuth, validateHumanization, aiController.humanizeText);
 
 /**
  * @route   POST /api/ai/ai-detect

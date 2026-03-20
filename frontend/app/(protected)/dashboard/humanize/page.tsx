@@ -77,6 +77,7 @@ export default function HumanizePage() {
       })
     } catch (err: any) {
       console.error('Humanize error details:', err); // Debug logging
+      const errorMessage = err.response?.data?.message || "Failed to humanize text. Please try again."
       
       // Handle LLM unavailable
       if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
@@ -92,14 +93,13 @@ export default function HumanizePage() {
       if (err.response?.status === 503) {
         toast({
           title: "AI service unavailable",
-          description: "Please try again later.",
+          description: errorMessage,
           className: "bg-white text-black border-gray-200",
         })
         return
       }
 
-      // Handle feature disabled
-      if (err.response?.status === 403) {
+      if (err.response?.status === 403 && errorMessage === "This feature is currently disabled by admin") {
         toast({
           title: "Feature disabled",
           description: "This feature is currently disabled by the administrator.",
@@ -112,7 +112,6 @@ export default function HumanizePage() {
       console.log('Raw error response:', err.response?.data);
       
       // Handle other errors
-      const errorMessage = err.response?.data?.message || "Failed to humanize text. Please try again."
       setError(errorMessage)
       toast({
         title: "Humanization failed",

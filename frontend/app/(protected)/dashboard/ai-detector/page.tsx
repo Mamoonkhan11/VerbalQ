@@ -71,6 +71,7 @@ export default function AIDetectorPage() {
         className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "Failed to detect AI text. Please try again."
       // Handle LLM unavailable
       if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
         toast({
@@ -85,14 +86,13 @@ export default function AIDetectorPage() {
       if (err.response?.status === 503) {
         toast({
           title: "AI service unavailable",
-          description: "Please try again later.",
+          description: errorMessage,
           className: "bg-white text-black border-gray-200",
         })
         return
       }
 
-      // Handle feature disabled
-      if (err.response?.status === 403) {
+      if (err.response?.status === 403 && errorMessage === "This feature is currently disabled by admin") {
         toast({
           title: "Feature disabled",
           description: "This feature is currently disabled by the administrator.",
@@ -102,7 +102,6 @@ export default function AIDetectorPage() {
       }
 
       // Handle other errors
-      const errorMessage = err.response?.data?.message || "Failed to detect AI text. Please try again."
       toast({
         title: "Error",
         description: errorMessage,

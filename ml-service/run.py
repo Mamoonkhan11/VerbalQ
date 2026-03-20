@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
-"""
-Run script for the NLP Services API.
-
-This script starts the FastAPI server with optimal settings for development.
-"""
-
 import uvicorn
 import os
 
 if __name__ == "__main__":
-    # Disable Hugging Face symlinks warning on Windows
+    # Disable Hugging Face symlinks warning
     os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+    
+    # Render provides a 'PORT' environment variable. 
+    # We use that, or default to 8001 if running locally.
+    port = int(os.environ.get("PORT", 8001))
     
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8001,
-        reload=True,
+        port=port,  # Use the dynamic port
+        reload=False, # Set reload to False for production/Render
         log_level="info",
         access_log=True
     )

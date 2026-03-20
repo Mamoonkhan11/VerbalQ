@@ -1,20 +1,24 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useRef, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, ArrowLeft, UserPlus } from "lucide-react"
+import { Eye, EyeOff, ArrowLeft, UserPlus, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/lib/auth-context"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+  const auth = useAuth()
+  const convertGuest = auth.convertGuest || (() => Promise.resolve())
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -28,6 +32,15 @@ export default function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({})
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Check if coming from guest limit modal
+  const fromLimit = searchParams.get('from') === 'limit'
+  
+  useEffect(() => {
+    if (fromLimit) {
+      console.log("Registering from guest limit - will convert guest account")
+    }
+  }, [fromLimit])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -59,35 +72,49 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.toLowerCase().trim(),
-          password: formData.password,
-        }),
-      })
+      if (fromLimit) {
+        // Convert guest account to registered user
+        await convertGuest(formData.name.trim(), formData.email.toLowerCase().trim(), formData.password)
+        
+        toast({
+          title: "✅ Account Created!",
+          description: "Your usage history has been preserved. Welcome to VerbalQ!",
+          className: "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200",
+        })
+        
+        router.push("/dashboard")
+      } else {
+        // Regular registration
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name.trim(),
+            email: formData.email.toLowerCase().trim(),
+            password: formData.password,
+          }),
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      if (!response.ok) {
-        setError(data?.message || "Registration failed")
-        return
+        if (!response.ok) {
+          setError(data?.message || "Registration failed")
+          return
+        }
+
+        toast({
+          title: "✅ Account Created",
+          description: "Welcome to VerbalQ! Redirecting to login...",
+          className: "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200",
+        })
+
+        setTimeout(() => {
+          router.push("/login")
+        }, 1500)
       }
 
-      toast({
-        title: "✅ Account Created",
-        description: "Welcome to VerbalQ! Redirecting to login...",
-        className: "border-green-200 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200",
-      })
-
-      setTimeout(() => {
-        router.push("/login")
-      }, 1500)
-
     } catch (err: any) {
-      setError("An unexpected error occurred")
+      setError(err?.response?.data?.message || "An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }

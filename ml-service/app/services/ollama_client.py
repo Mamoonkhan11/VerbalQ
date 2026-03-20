@@ -26,7 +26,7 @@ class OllamaClient:
         self.base_url = base_url.rstrip('/')
         self.model = model
         self.generate_url = f"{self.base_url}/api/generate"
-        self.timeout = 60  # 60 seconds timeout for LLM generation
+        self.timeout = 180  # 180 seconds (3 minutes) for LLM generation - mistral can be slow
         
     def check_health(self) -> bool:
         """Check if Ollama server is available."""
@@ -59,6 +59,8 @@ class OllamaClient:
                 "options": {
                     "temperature": 0.3,  # Low temperature for more deterministic output
                     "top_p": 0.9,
+                    "num_predict": 512,  # Limit output length for faster generation
+                    "num_ctx": 2048,     # Context window size (smaller = faster)
                 }
             }
             
@@ -198,7 +200,7 @@ Corrected text:"""
                 "corrections": [],
             }
     
-    def humanize_text(self, text: str, language: str, tone: str = "casual") -> str:
+    def humanize_text(self, text: str, language: str, tone: str = "casual", strengthen_human_style: bool = False) -> str:
         """
         Humanize text using LLM.
         
@@ -206,6 +208,7 @@ Corrected text:"""
             text: Text to humanize
             language: Language code
             tone: Desired tone (casual, professional, academic, creative)
+            strengthen_human_style: If True, use more aggressive humanization
             
         Returns:
             Humanized text
@@ -219,7 +222,19 @@ Corrected text:"""
         
         tone_desc = tone_instructions.get(tone, tone_instructions["casual"])
         
-        prompt = f"""Rewrite this text to sound natural and human-like in a {tone_desc} tone.
+        # Adjust prompt based on strengthening flag
+        if strengthen_human_style:
+            style_instruction = """
+Additional requirements:
+- Use MORE varied sentence structures
+- Add natural imperfections (occasional colloquialisms, contractions)
+- Include personal touches and emotional nuance
+- Avoid overly formal or robotic phrasing
+- Make it sound distinctly HUMAN, not AI-generated"""
+        else:
+            style_instruction = ""
+        
+        prompt = f"""Rewrite this text to sound natural and human-like in a {tone_desc} tone.{style_instruction}
 
 Rules:
 - Preserve the original meaning

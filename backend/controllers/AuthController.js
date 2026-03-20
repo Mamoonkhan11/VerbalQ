@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const GuestUsage = require('../models/GuestUsage');
 const asyncHandler = require('../middleware/asyncHandler');
 
 class AuthController {
@@ -202,6 +203,82 @@ class AuthController {
     res.json({
       success: true,
       message: 'Password has been reset successfully. You can now log in.'
+    });
+  });
+
+  /**
+   * Convert guest user to registered user
+   * POST /api/auth/convert-guest
+   */
+  convertGuest = asyncHandler(async (req, res) => {
+    const { name, email, password, guestIdentifier } = req.body;
+
+    // Validate guest identifier
+    if (!guestIdentifier) {
+      return res.status(400).json({
+        success: false,
+        message: 'Guest identifier is required'
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Find guest usage record
+    const guestUsage = await GuestUsage.findOne({ identifier: guestIdentifier });
+    
+    // Create new user account
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password,
+      isGuest: false,
+      convertedFromGuest: new Date()
+    });
+
+    // Transfer guest usage history to user if exists
+    if (guestUsage) {
+      user.usageHistory = guestUsage.usageHistory.map(item => ({
+        serviceType: item.serviceType,
+        timestamp: item.timestamp
+      }));
+      await user.save();
+
+      // Delete guest record
+      await GuestUsage.deleteOne({ identifier: guestIdentifier });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: user._id,
+        email: user.email,
+        role: user.role 
+      },
+      process.env.JWT_SECRET || 'fallback-secret',
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully. Your usage history has been preserved!',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isGuest: false,
+          convertedFromGuest: user.convertedFromGuest
+        },
+        token
+      }
     });
   });
 

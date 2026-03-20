@@ -48,8 +48,8 @@ export default function GrammarPage() {
         throw new Error(data.message || "Grammar check failed")
       }
 
-      setOutputText(data.correctedText || "")
-      setCorrections(data.corrections || [])
+      setOutputText(data.data.correctedText || "")
+      setCorrections(data.data.corrections || [])
 
       toast({
         title: "Grammar check completed",
@@ -57,6 +57,7 @@ export default function GrammarPage() {
         className: "bg-white text-black border-gray-200",
       })
     } catch (err: any) {
+      const errorMessage = err.response?.data?.message || "Failed to check grammar. Please try again."
       // Handle LLM unavailable
       if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
         toast({
@@ -71,14 +72,13 @@ export default function GrammarPage() {
       if (err.response?.status === 503) {
         toast({
           title: "Grammar service unavailable",
-          description: "Please try again later.",
+          description: errorMessage,
           className: "bg-white text-black border-gray-200",
         })
         return
       }
 
-      // Handle feature disabled
-      if (err.response?.status === 403) {
+      if (err.response?.status === 403 && errorMessage === "This feature is currently disabled by admin") {
         toast({
           title: "Feature disabled",
           description: "This feature is currently disabled by the administrator.",
@@ -88,7 +88,6 @@ export default function GrammarPage() {
       }
 
       // Handle other errors
-      const errorMessage = err.response?.data?.message || "Failed to check grammar. Please try again."
       toast({
         title: "Error",
         description: errorMessage,

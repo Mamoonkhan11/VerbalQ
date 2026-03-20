@@ -1,9 +1,32 @@
 const History = require('../models/History');
 const AppSettings = require('../models/AppSettings');
+const { incrementGuestUsage } = require('../middleware/guestAuth');
 const asyncHandler = require('../middleware/asyncHandler');
 const getMLClient = require('../services/mlClient');
 
 class AIController {
+  buildHumanizeFallback = (text, tone = 'casual') => {
+    const normalized = text.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    let humanized = normalized;
+    if (tone === 'casual') {
+      humanized = humanized
+        .replace(/\bdo not\b/gi, "don't")
+        .replace(/\bcannot\b/gi, "can't")
+        .replace(/\bit is\b/gi, "it's")
+        .replace(/\bi am\b/gi, "I'm");
+    }
+
+    humanized = humanized.charAt(0).toUpperCase() + humanized.slice(1);
+    if (!/[.!?]$/.test(humanized)) {
+      humanized += '.';
+    }
+
+    return humanized;
+  };
   /**
    * Grammar check endpoint
    * POST /api/ai/grammar
@@ -48,21 +71,30 @@ class AIController {
       const correctedText = mlData.corrected_text;
       const corrections = mlData.corrections || [];
 
-      // Save to history and limit records
-      await this.saveToHistoryAndLimit(req.user._id, 'grammar', text.trim(), correctedText, {
-        inputLength: text.length,
-        outputLength: correctedText.length,
-        issuesCount: corrections.length,
-        language: language
-      });
+      // Save to history for authenticated users
+      if (req.user) {
+        await this.saveToHistoryAndLimit(req.user._id, 'grammar', text.trim(), correctedText, {
+          inputLength: text.length,
+          outputLength: correctedText.length,
+          issuesCount: corrections.length,
+          language: language
+        });
+      }
+      
+      // Track guest usage
+      if (req.guest) {
+        await incrementGuestUsage(req, 'grammar');
+      }
 
       // New flattened response format for frontend consumption
       // NOTE: per product requirement, we do NOT return originalText here.
       res.json({
         success: true,
-        correctedText,
-        corrections,
-        language
+        data: {
+          correctedText,
+          corrections,
+          language
+        }
       });
 
     } catch (error) {
@@ -142,13 +174,20 @@ class AIController {
         target_lang: targetLanguage
       });
 
-      // Save to history and limit records
-      await this.saveToHistoryAndLimit(req.user._id, 'translate', text.trim(), mlData.translated_text, {
-        sourceLanguage: sourceLanguage,
-        targetLanguage: targetLanguage,
-        inputLength: text.length,
-        outputLength: mlData.translated_text.length
-      });
+      // Save to history for authenticated users
+      if (req.user) {
+        await this.saveToHistoryAndLimit(req.user._id, 'translate', text.trim(), mlData.translated_text, {
+          sourceLanguage: sourceLanguage,
+          targetLanguage: targetLanguage,
+          inputLength: text.length,
+          outputLength: mlData.translated_text.length
+        });
+      }
+      
+      // Track guest usage
+      if (req.guest) {
+        await incrementGuestUsage(req, 'translate');
+      }
 
       res.json({
         success: true,
@@ -189,6 +228,7 @@ class AIController {
    */
   humanizeText = asyncHandler(async (req, res) => {
     const { text, language = 'en' } = req.body;
+    const requestedTone = req.body.tone || 'casual';
 
     // Validate input
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
@@ -219,20 +259,36 @@ class AIController {
       const mlClient = getMLClient();
 
       // Call ML service through client
-      const mlData = await mlClient.humanize({
-        text: text.trim(),
-        tone: req.body.tone || 'casual', // Use tone from request or default
-        language: language
-      });
+      const mlData = await Promise.race([
+        mlClient.humanize({
+          text: text.trim(),
+          tone: requestedTone,
+          language: language
+        }),
+        new Promise((_, reject) => {
+          setTimeout(() => {
+            const timeoutError = new Error('Humanization timed out');
+            timeoutError.status = 503;
+            reject(timeoutError);
+          }, 12000);
+        })
+      ]);
 
-      // Save to history and limit records
-      await this.saveToHistoryAndLimit(req.user._id, 'humanize', text.trim(), mlData.rewritten_text, {
-        inputLength: text.length,
-        outputLength: mlData.rewritten_text.length,
-        tone: mlData.tone,
-        language: language,
-        humanizationLevel: 'medium'
-      });
+      // Save to history for authenticated users
+      if (req.user) {
+        await this.saveToHistoryAndLimit(req.user._id, 'humanize', text.trim(), mlData.rewritten_text, {
+          inputLength: text.length,
+          outputLength: mlData.rewritten_text.length,
+          tone: mlData.tone,
+          language: language,
+          humanizationLevel: 'medium'
+        });
+      }
+      
+      // Track guest usage
+      if (req.guest) {
+        await incrementGuestUsage(req, 'humanize');
+      }
 
       res.json({
         success: true,
@@ -248,6 +304,41 @@ class AIController {
 
     } catch (error) {
       console.error('Humanization error:', error.message);
+      const message = error.message || '';
+      const shouldFallback =
+        error.status === 503 ||
+        /timeout|unreachable|econnreset|aborted|socket hang up/i.test(message);
+
+      if (shouldFallback) {
+        const fallbackText = this.buildHumanizeFallback(text.trim(), requestedTone);
+
+        if (req.user) {
+          await this.saveToHistoryAndLimit(req.user._id, 'humanize', text.trim(), fallbackText, {
+            inputLength: text.length,
+            outputLength: fallbackText.length,
+            tone: requestedTone,
+            language: language,
+            humanizationLevel: 'fallback'
+          });
+        }
+
+        if (req.guest) {
+          await incrementGuestUsage(req, 'humanize');
+        }
+
+        return res.json({
+          success: true,
+          message: 'Text humanization completed successfully',
+          data: {
+            originalText: text,
+            humanizedText: fallbackText,
+            tone: requestedTone,
+            language: language,
+            method: 'fallback',
+            changes: ['Adjusted tone and flow']
+          }
+        });
+      }
 
       // Handle specific ML service errors
       if (error.status) {

@@ -37,16 +37,17 @@ app.use(helmet({
 app.disable('x-powered-by');
 
 // CORS configuration with restricted origins
-const allowedOrigins = process.env.CLIENT_URL ?
-  process.env.CLIENT_URL.split(',') :
-  ['http://localhost:3000'];
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : ['http://localhost:3000', 'http://localhost:3001'];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    const isLocalDevOrigin = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin);
+
+    if (allowedOrigins.includes(origin) || (process.env.NODE_ENV === 'development' && isLocalDevOrigin)) {
       return callback(null, true);
     } else {
       return callback(new Error('Not allowed by CORS'));
@@ -54,7 +55,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Fingerprint']
 }));
 
 // Request logging - clean and readable format

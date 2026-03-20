@@ -1,8 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
-// Create axios instance with base configuration
+const configuredBaseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const baseURL = configuredBaseURL.includes('://localhost:8001') ? 'http://localhost:5000' : configuredBaseURL;
+
 const api: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -29,6 +31,7 @@ api.interceptors.response.use(
   },
   (error: AxiosError) => {
     const status = error.response?.status;
+    const data = error.response?.data as any;
 
     // Handle authentication errors
     if (status === 401) {
@@ -39,9 +42,20 @@ api.interceptors.response.use(
     }
 
     // Handle blocked user errors (403)
-    if (status === 403 && error.response?.data && (error.response.data as any).message?.includes('blocked')) {
+    if (status === 403 && data && data.message?.includes('blocked')) {
       localStorage.removeItem('auth_token');
       window.location.href = '/login?error=blocked';
+      return Promise.reject(error);
+    }
+    
+    // Handle guest limit reached (403 with GUEST_LIMIT_REACHED)
+    if (status === 403 && data && data.message === 'GUEST_LIMIT_REACHED') {
+      // Dispatch custom event to trigger modal
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('guest-limit-reached', {
+          detail: { usageCount: data.data?.usageCount || 3 }
+        }))
+      }
       return Promise.reject(error);
     }
 

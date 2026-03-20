@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { Github, Twitter, Linkedin, Mail } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -21,10 +22,16 @@ export default function Footer() {
             <p className="text-sm leading-relaxed mb-6 max-w-xs text-slate-400">
               Powered by <span className="text-blue-400 font-semibold">vionys</span>. Aiming to bridge obstacles in technology through advanced AI integration.
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="hover:text-white transition-colors p-2 bg-slate-900 rounded-lg"><Github className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white transition-colors p-2 bg-slate-900 rounded-lg"><Twitter className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white transition-colors p-2 bg-slate-900 rounded-lg"><Mail className="w-5 h-5" /></a>
+            <div className="flex gap-4" title="Social media links coming soon">
+              <div className="p-2 bg-slate-900 rounded-lg opacity-50 cursor-not-allowed" aria-label="GitHub (coming soon)">
+                <Github className="w-5 h-5" />
+              </div>
+              <div className="p-2 bg-slate-900 rounded-lg opacity-50 cursor-not-allowed" aria-label="Twitter (coming soon)">
+                <Twitter className="w-5 h-5" />
+              </div>
+              <div className="p-2 bg-slate-900 rounded-lg opacity-50 cursor-not-allowed" aria-label="Email (coming soon)">
+                <Mail className="w-5 h-5" />
+              </div>
             </div>
           </div>
 
@@ -54,10 +61,54 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6 uppercase tracking-widest text-xs">Legal & Privacy</h4>
             <ul className="space-y-4 text-sm">
-              <li><a href="#" className="hover:text-blue-400 transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition-colors">Cookie Policy</a></li>
-              <li><a href="#" className="hover:text-blue-400 transition-colors">Contact Support</a></li>
+              <li>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-slate-400 cursor-not-allowed">Terms of Service</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Coming soon</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </li>
+              <li>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-slate-400 cursor-not-allowed">Privacy Policy</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Coming soon</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </li>
+              <li>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-slate-400 cursor-not-allowed">Cookie Policy</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Coming soon</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </li>
+              <li>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-slate-400 cursor-not-allowed">Contact Support</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Coming soon</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </li>
             </ul>
           </div>
         </div>

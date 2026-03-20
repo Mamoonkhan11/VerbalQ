@@ -59,6 +59,7 @@ export default function PlagiarismPage() {
       })
     } catch (err: any) {
       console.error('Plagiarism check error details:', err); // Debug logging
+      const errorMessage = err.response?.data?.message || "Failed to check plagiarism. Please try again."
       
       // Handle LLM unavailable (semantic plagiarism detection)
       if (err.response?.status === 503 && err.response?.data?.error === 'LLM_UNAVAILABLE') {
@@ -74,7 +75,7 @@ export default function PlagiarismPage() {
       if (err.response?.status === 503) {
         toast({
           title: "AI service unavailable",
-          description: "Please try again later.",
+          description: errorMessage,
           className: "bg-white text-black border-gray-200",
         })
         return
@@ -90,8 +91,7 @@ export default function PlagiarismPage() {
         return
       }
 
-      // Handle feature disabled
-      if (err.response?.status === 403) {
+      if (err.response?.status === 403 && errorMessage === "This feature is currently disabled by admin") {
         toast({
           title: "Feature disabled",
           description: "This feature is currently disabled by the administrator.",
@@ -104,7 +104,6 @@ export default function PlagiarismPage() {
       console.log('Raw error response:', err.response?.data);
       
       // Handle other errors
-      const errorMessage = err.response?.data?.message || "Failed to check plagiarism. Please try again."
       toast({
         title: "Error",
         description: errorMessage,

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { createContext, useContext, useEffect, useState } from "react"
 import api from "@/lib/api"
 import type { User } from "@/lib/types"
+import { useGuestUsage } from "@/hooks/use-guest-usage"
 
 export interface AuthUser {
   userId: string
@@ -18,6 +19,9 @@ interface AuthContextType {
   user: AuthUser | null
   isLoading: boolean
   isAuthenticated: boolean
+  isGuest: boolean  // Guest user flag
+  usageCount: number  // Current usage count
+  limitReached: boolean  // Whether limit is reached
   login: (
     email: string,
     password: string,
@@ -26,7 +30,10 @@ interface AuthContextType {
     | { success: true; role: "user" | "admin" }
     | { success: false; error: string }
   >
+  signup: (name: string, email: string, password: string) => Promise<void>  // ADD THIS
+  convertGuest: (name: string, email: string, password: string) => Promise<void>  // ADD THIS
   logout: () => Promise<void>
+  incrementUsage: () => void  // ADD THIS
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -35,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const { usageCount, limitReached, incrementUsage, resetUsage, setIdentifier } = useGuestUsage()
 
   useEffect(() => {
     // Only run auth check on client side
@@ -72,6 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: userData.name,
           role: userData.role
         })
+        
+        // Reset guest tracking when logged in
+        resetUsage()
         }
       } catch (error) {
         console.error("Auth check failed:", error)
@@ -146,6 +157,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name: userData.name,
         role: userData.role,
       })
+      
+      // Reset guest tracking after successful login
+      resetUsage()
 
       return { success: true as const, role: userData.role as "user" | "admin" }
     } catch (error: any) {
@@ -177,6 +191,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Logout failed:", error)
     }
   }
+  
+  // Signup function
+  const signup = async (name: string, email: string, password: string) => {
+    try {
+      const response = await api.post('/api/auth/register', {
+        name,
+        email: email.toLowerCase().trim(),
+        password
+      })
+      
+      const { data } = response.data
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token)
+        setUser({
+          userId: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          role: data.user.role,
+        })
+        resetUsage()
+      }
+    } catch (error) {
+      console.error('Signup error:', error)
+      throw error
+    }
+  }
+  
+  // Convert guest to registered user
+  const convertGuest = async (name: string, email: string, password: string) => {
+    try {
+      const guestIdentifier = localStorage.getItem('verbalq_guest_identifier') || 'unknown'
+      
+      const response = await api.post('/api/auth/convert-guest', {
+        name,
+        email: email.toLowerCase().trim(),
+        password,
+        guestIdentifier
+      })
+      
+      const { data } = response.data
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token)
+        setUser({
+          userId: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          role: data.user.role,
+        })
+        resetUsage()
+      }
+    } catch (error) {
+      console.error('Guest conversion error:', error)
+      throw error
+    }
+  }
 
   return (
     <AuthContext.Provider
@@ -184,8 +253,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
+        isGuest: !user && typeof window !== 'undefined',
+        usageCount,
+        limitReached,
         login,
+        signup,
+        convertGuest,
         logout,
+        incrementUsage,
       }}
     >
       {children}
@@ -201,11 +276,23 @@ export function useAuth() {
       user: null,
       isLoading: true,
       isAuthenticated: false,
+      isGuest: false,
+      usageCount: 0,
+      limitReached: false,
       login: async (email: string, password: string) => {
         console.warn("AuthProvider not ready yet")
         return { success: false, error: "Authentication service initializing..." }
       },
+      signup: async () => {
+        console.warn("AuthProvider not ready yet")
+      },
+      convertGuest: async () => {
+        console.warn("AuthProvider not ready yet")
+      },
       logout: async () => {
+        console.warn("AuthProvider not ready yet")
+      },
+      incrementUsage: () => {
         console.warn("AuthProvider not ready yet")
       },
     }

@@ -7,6 +7,20 @@ const { authRateLimit } = require('../middleware/rateLimit');
 
 /**
  * @route   POST /api/auth/register
+ * @desc    Register a new user (supports guest conversion)
+ * @access  Public
+ */
+router.post('/register', authRateLimit, validateRegistration, authController.register);
+
+/**
+ * @route   POST /api/auth/convert-guest
+ * @desc    Convert guest user to registered user
+ * @access  Public
+ */
+router.post('/convert-guest', authRateLimit, validateRegistration, authController.convertGuest);
+
+/**
+ * @route   POST /api/auth/register
  * @desc    Register a new user
  * @access  Public
  */

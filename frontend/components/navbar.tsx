@@ -35,7 +35,17 @@ export default function Navbar() {
               variant="outline"
               size="sm"
               asChild
-              className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+              className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
+            >
+              <Link href="/guest">
+                Try Free
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
             >
               <Link href="/admin/login" className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />
