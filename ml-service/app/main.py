@@ -1,4 +1,4 @@
-"""""
+"""
 Main FastAPI application for NLP services.
 
 This application provides REST endpoints for various NLP operations:
@@ -11,10 +11,11 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import time
 import os
-import nltk  
+import nltk
 
 from .routers import grammar, translation, humanize, plagiarism, ai_detection
 from .models.schemas import HealthResponse, LanguageResponse, TranslationLanguagesResponse
+
 
 # Create FastAPI application
 app = FastAPI(
@@ -22,6 +23,7 @@ app = FastAPI(
     description="AI-powered NLP services for text processing",
     version="1.0.0",
 )
+
 
 # --- NEW: NLTK DATA DOWNLOAD ON STARTUP ---
 @app.on_event("startup")
@@ -36,17 +38,19 @@ async def startup_event():
         nltk.download('stopwords')
         print("✅ NLTK data downloaded successfully.")
     except Exception as e:
-        print(f" Error downloading NLTK data: {e}")
+        print(f"❌ Error downloading NLTK data: {e}")
+
 
 # Configure CORS
 # Update allow_origins with your Netlify URL for better security later
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Include routers
 app.include_router(grammar.router)
@@ -55,7 +59,6 @@ app.include_router(humanize.router)
 app.include_router(plagiarism.router)
 app.include_router(ai_detection.router)
 
-<<<<<<< HEAD
 
 @app.get("/health", response_model=HealthResponse)
 @app.get("/", response_model=HealthResponse)
@@ -131,9 +134,6 @@ async def get_translation_languages():
         supportedPairs=supported_pairs
     )
 
-=======
-# ... (rest of your health and language endpoints) ...
->>>>>>> 72ae3df3592912ff38aa4433643156f2b3579952
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
@@ -142,6 +142,7 @@ async def add_process_time_header(request: Request, call_next):
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
     return response
+
 
 if __name__ == "__main__":
     import uvicorn
@@ -154,4 +155,4 @@ if __name__ == "__main__":
         port=port,      # Use the environment variable
         reload=False,   # Set to False for production stability
         log_level="info"
-)
+    )
