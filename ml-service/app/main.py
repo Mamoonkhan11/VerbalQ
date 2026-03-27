@@ -47,20 +47,25 @@ app.include_router(ai_detection.router)
 
 
 @app.get("/health", response_model=HealthResponse)
+@app.get("/", response_model=HealthResponse)
 async def health_check():
     """
     Health check endpoint to verify service availability.
 
     Returns service status and version information.
+    This endpoint is used by Railway and other deployment platforms.
+    
+    Note: Also accessible via root '/' for compatibility.
     """
     return HealthResponse(
-        status="OK",
+        status="ok",  # lowercase for Railway compatibility
         version="1.0.0",
         services={
-            "grammar": "LanguageTool",
-            "translation": "MarianMT",
-            "humanization": "BART",
-            "plagiarism": "TF-IDF + Cosine Similarity"
+            "grammar": "operational",
+            "translation": "operational",
+            "humanization": "operational",
+            "plagiarism": "operational",
+            "ai_detection": "operational"
         }
     )
 

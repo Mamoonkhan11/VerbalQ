@@ -141,10 +141,13 @@ class AIDetectionRequest(BaseModel):
 
 class AIDetectionResponse(BaseModel):
     success: bool = Field(default=True, description="Operation success status")
-    aiProbability: float = Field(..., ge=0.0, le=100.0, description="Probability that text is AI-generated (0-100%)")
-    humanProbability: float = Field(..., ge=0.0, le=100.0, description="Probability that text is human-written (0-100%)")
+    aiProbability: float = Field(..., ge=0.0, le=100.0, alias="ai_probability", description="Probability that text is AI-generated (0-100%)")
+    humanProbability: float = Field(..., ge=0.0, le=100.0, alias="human_probability", description="Probability that text is human-written (0-100%)")
     label: str = Field(..., description="Classification label: 'AI' or 'Human'")
     confidence: str = Field(..., description="Confidence level: 'Low', 'Medium', or 'High'")
+    
+    class Config:
+        allow_population_by_field_name = True
 
 
 # Language Response Schemas

@@ -68,6 +68,11 @@ async def check_ai_detection(request: AIDetectionRequest):
         normalized_request = AIDetectionRequest(text=normalized_text, language=language)
 
         result = ai_detection_service.detect_ai_text(normalized_request)
+        
+        # Ensure result is not None (safety check)
+        if result is None:
+            raise RuntimeError("AI detection service returned None")
+        
         # The result is already an AIDetectionResponse object, return it directly
         return result
     except HTTPException:

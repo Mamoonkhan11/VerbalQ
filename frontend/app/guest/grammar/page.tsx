@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
@@ -36,6 +36,7 @@ export default function GuestGrammarPage() {
   const { user } = useAuth()
   const { incrementUsage, limitReached, identifier } = useGuestUsage()
   const { saveFormData, getFormData } = useFormDataRetention()
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [isClient, setIsClient] = useState(false)
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
@@ -104,6 +105,14 @@ export default function GuestGrammarPage() {
       return
     }
 
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController()
+
     setIsLoading(true)
 
     try {
@@ -116,7 +125,8 @@ export default function GuestGrammarPage() {
       }, {
         headers: {
           'X-Device-Fingerprint': guestIdentifier
-        }
+        },
+        signal: abortControllerRef.current.signal
       })
       
       const data = response.data

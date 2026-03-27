@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const History = require('../models/History');
+const Feedback = require('../models/Feedback');
 const asyncHandler = require('../middleware/asyncHandler');
 
 class AdminController {
@@ -129,6 +130,22 @@ class AdminController {
       data: {
         userId: user._id,
         isBlocked: user.isBlocked
+      }
+    });
+  });
+
+  /**
+   * Get all feedback messages
+   * GET /api/admin/feedback
+   */
+  getFeedback = asyncHandler(async (req, res) => {
+    const feedbacks = await Feedback.find().sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      message: 'Feedback retrieved successfully',
+      data: {
+        feedbacks
       }
     });
   });

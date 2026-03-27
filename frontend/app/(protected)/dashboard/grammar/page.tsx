@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -28,6 +28,7 @@ export default function GrammarPage() {
   const { toast } = useToast()
   const { languages, loading: languagesLoading } = useLanguages()
   const { saveFormData, getFormData } = useFormDataRetention()
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -70,12 +71,22 @@ export default function GrammarPage() {
       return
     }
 
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController()
+
     setIsLoading(true)
 
     try {
       const response = await api.post("/api/ai/grammar", {
         text: inputText,
         language: selectedLanguage
+      }, {
+        signal: abortControllerRef.current.signal
       })
       const data = response.data
 

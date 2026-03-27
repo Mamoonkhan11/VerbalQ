@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { Users, FileText, TrendingUp, ActivitySquare, Loader2, Ban, CheckCircle } from "lucide-react"
+import { Users, FileText, TrendingUp, ActivitySquare, Loader2, Ban, CheckCircle, MessageSquare } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { AdminRoute } from "@/components/RouteProtection"
 import api from "@/lib/api"
@@ -35,13 +35,24 @@ interface User {
   createdAt: string
 }
 
+interface Feedback {
+  _id: string
+  name: string
+  email: string
+  message: string
+  createdAt: string
+  isRead: boolean
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [stats, setStats] = useState<Stats | null>(null)
   const [users, setUsers] = useState<User[]>([])
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUsersLoading, setIsUsersLoading] = useState(false)
+  const [isFeedbackLoading, setIsFeedbackLoading] = useState(false)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -82,7 +93,26 @@ export default function AdminDashboardPage() {
 
     fetchStats()
     fetchUsers()
+    fetchFeedbacks()
   }, [toast])
+
+  const fetchFeedbacks = async () => {
+    setIsFeedbackLoading(true)
+    try {
+      const response = await api.get("/api/admin/feedback")
+      const data = response.data
+      setFeedbacks(data.data.feedbacks || [])
+    } catch (err: any) {
+      toast({
+        title: "Error loading feedback",
+        description: err.response?.data?.message || "Failed to load feedback",
+        className: "bg-white text-black border-gray-200",
+      })
+      console.error("Feedback fetch error:", err)
+    } finally {
+      setIsFeedbackLoading(false)
+    }
+  }
 
   const handleBlockUser = async (userId: string, currentBlockedStatus: boolean) => {
     const action = currentBlockedStatus ? 'unblock' : 'block'
@@ -311,6 +341,80 @@ export default function AdminDashboardPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Feedback Messages */}
+        <Card className="border border-border mt-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-muted-foreground" />
+                <CardTitle>Feedback Messages</CardTitle>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchFeedbacks}
+                disabled={isFeedbackLoading}
+              >
+                {isFeedbackLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Refresh"
+                )}
+              </Button>
+            </div>
+            <CardDescription>Messages from users and visitors</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isFeedbackLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : feedbacks.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">No feedback messages yet</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                {feedbacks.map((feedback) => (
+                  <div
+                    key={feedback._id}
+                    className={`p-4 rounded-lg border ${
+                      feedback.isRead
+                        ? "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800"
+                        : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {feedback.name}
+                          </p>
+                          {!feedback.isRead && (
+                            <Badge variant="default" className="text-xs">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {feedback.email}
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                          {feedback.message}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {format(new Date(feedback.createdAt), "MMM dd, yyyy 'at' HH:mm")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

@@ -30,9 +30,9 @@ export default function FeedbackForm() {
 
       if (response.ok) {
         toast({
-          title: "Feedback Sent! 🚀",
+          title: "Feedback Sent!",
           description: "Thank you for your valuable feedback. We appreciate your input!",
-          className: "bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:text-green-200",
+          className: "bg-white text-black border-gray-200",
         })
         setFormData({ name: "", email: "", message: "" })
       } else {
@@ -40,9 +40,9 @@ export default function FeedbackForm() {
       }
     } catch (error) {
       toast({
-        variant: "destructive",
         title: "Submission Failed",
         description: "Something went wrong. Please try again later.",
+        className: "bg-white text-black border-gray-200",
       })
     } finally {
       setIsSubmitting(false)

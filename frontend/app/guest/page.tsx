@@ -82,9 +82,8 @@ export default function GuestDashboardPage() {
       description: "Check for originality and detect potential plagiarism",
       icon: FileText,
       color: "from-orange-500 to-red-600",
-      href: "/login?redirect=/dashboard/plagiarism",
-      disabled: true,
-      requiresAuth: true,
+      href: "/guest/plagiarism",
+      disabled: false,
     },
   ]
   

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -22,6 +22,7 @@ export default function HumanizePage() {
   const { toast } = useToast()
   const { languages } = useLanguages()
   const { saveFormData, getFormData } = useFormDataRetention()
+  const abortControllerRef = useRef<AbortController | null>(null)
   const [inputText, setInputText] = useState("")
   const [outputText, setOutputText] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -88,11 +89,21 @@ export default function HumanizePage() {
     setError(null)
     setIsLoading(true)
 
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController()
+
     try {
       const response = await api.post("/api/ai/humanize", {
         text: inputText,
         language: selectedLanguage,
         tone: "casual"
+      }, {
+        signal: abortControllerRef.current.signal
       })
       const data = response.data
 

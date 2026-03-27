@@ -207,50 +207,44 @@ Base your analysis SOLELY on writing style patterns, not content quality."""
                 result = _call_ollama_and_parse(request)
             except ValueError as e:
                 # After second failure, signal detection failure upstream
+                print(f"AI detection failed after retry: {str(e)}")
                 raise ValueError("DETECTION_FAILED") from e
-
-            # Validate the result has required fields
-            required_fields = ["ai_probability", "human_probability", "label", "confidence"]
-            for field in required_fields:
-                if field not in result:
-                    raise ValueError(f"Missing required field '{field}' in LLM response")
+        
+        # Validate the result has required fields
+        if result is None:
+            raise ValueError("DETECTION_FAILED: LLM returned empty response")
             
-            # Post-process and validate results
-            ai_prob = _coerce_number(result["ai_probability"])
-            human_prob = _coerce_number(result["human_probability"])
-            
-            # Ensure probabilities sum to ~100 (allow small variance)
-            total = ai_prob + human_prob
-            if abs(total - 100) > 5:
-                # Normalize if way off
-                ai_prob = (ai_prob / total) * 100
-                human_prob = (human_prob / total) * 100
-            
-            # Override label based on actual probabilities (trust numbers over LLM's label)
-            calculated_label = "AI" if ai_prob >= 50 else "Human"
-            
-            # If LLM's label doesn't match calculated, trust the probabilities
-            # This prevents LLM from saying "AI" while giving low ai_probability
-            final_label = calculated_label
-            
-            # Build validated response
-            return {
-                "ai_probability": round(ai_prob, 1),
-                "human_probability": round(human_prob, 1),
-                "label": final_label,
-                "confidence": _normalize_confidence(str(result.get("confidence", "Medium"))),
-                "reasoning": result.get("reasoning", "Analysis based on writing style patterns"),
-            }
-
-        except TimeoutError as e:
-            raise ValueError(f"DETECTION_TIMEOUT: {str(e)}") from e
-        except ConnectionError as e:
-            raise ValueError(f"DETECTION_UNAVAILABLE: {str(e)}") from e
-        except RuntimeError as e:
-            raise ValueError(f"DETECTION_ERROR: {str(e)}") from e
-        except Exception as e:
-            print(f"AI detection error details: {type(e).__name__}: {str(e)}")
-            raise RuntimeError(f"Detection failed: {str(e)}") from e
+        required_fields = ["ai_probability", "human_probability", "label", "confidence"]
+        for field in required_fields:
+            if field not in result:
+                raise ValueError(f"Missing required field '{field}' in LLM response")
+        
+        # Post-process and validate results
+        ai_prob = _coerce_number(result["ai_probability"])
+        human_prob = _coerce_number(result["human_probability"])
+        
+        # Ensure probabilities sum to ~100 (allow small variance)
+        total = ai_prob + human_prob
+        if abs(total - 100) > 5:
+            # Normalize if way off
+            ai_prob = (ai_prob / total) * 100
+            human_prob = (human_prob / total) * 100
+        
+        # Override label based on actual probabilities (trust numbers over LLM's label)
+        calculated_label = "AI" if ai_prob >= 50 else "Human"
+        
+        # If LLM's label doesn't match calculated, trust the probabilities
+        # This prevents LLM from saying "AI" while giving low ai_probability
+        final_label = calculated_label
+        
+        # Build validated response
+        return {
+            "ai_probability": round(ai_prob, 1),
+            "human_probability": round(human_prob, 1),
+            "label": final_label,
+            "confidence": _normalize_confidence(str(result.get("confidence", "Medium"))),
+            "reasoning": result.get("reasoning", "Analysis based on writing style patterns"),
+        }
 
 
 # Global service instance

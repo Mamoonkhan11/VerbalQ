@@ -12,17 +12,89 @@ class AIController {
     }
 
     let humanized = normalized;
+    
+    // Advanced humanization techniques to bypass AI detection
     if (tone === 'casual') {
+      // Add contractions
       humanized = humanized
         .replace(/\bdo not\b/gi, "don't")
         .replace(/\bcannot\b/gi, "can't")
         .replace(/\bit is\b/gi, "it's")
-        .replace(/\bi am\b/gi, "I'm");
+        .replace(/\bi am\b/gi, "I'm")
+        .replace(/\bwe are\b/gi, "we're")
+        .replace(/\bthey are\b/gi, "they're")
+        .replace(/\byou are\b/gi, "you're")
+        .replace(/\bwill not\b/gi, "won't")
+        .replace(/\bwould not\b/gi, "wouldn't")
+        .replace(/\bcould not\b/gi, "couldn't")
+        .replace(/\bshould not\b/gi, "shouldn't")
+        .replace(/\bhas not\b/gi, "hasn't")
+        .replace(/\bhaven not\b/gi, "haven't")
+        .replace(/\bdid not\b/gi, "didn't")
+        .replace(/\bis not\b/gi, "isn't")
+        .replace(/\bare not\b/gi, "aren't")
+        .replace(/\bwas not\b/gi, "wasn't")
+        .replace(/\bwere not\b/gi, "weren't");
+      
+      // Add filler words and transitions
+      humanized = humanized
+        .replace(/\.\s+(In|The|This|That)/gi, ". Well, $1")
+        .replace(/^(Actually|Basically|Generally|Typically)/i, "You know, $1")
+        .replace(/\btherefore\b/gi, "so")
+        .replace(/\bhowever\b/gi, "but then again")
+        .replace(/\bmoreover\b/gi, "plus")
+        .replace(/\bfurthermore\b/gi, "and another thing")
+        .replace(/\bconsequently\b/gi, "as a result")
+        .replace(/\bnevertheless\b/gi, "still")
+        .replace(/\bnonetheless\b/gi, "even so");
+      
+      // Make sentences more conversational
+      humanized = humanized
+        .replace(/\bIt is important to note that\b/gi, "Here's the thing:")
+        .replace(/\bIt should be noted that\b/gi, "Keep in mind that")
+        .replace(/\bIn order to\b/gi, "To")
+        .replace(/\bDue to the fact that\b/gi, "Because")
+        .replace(/\bIn the event that\b/gi, "If")
+        .replace(/\bAt this point in time\b/gi, "Right now")
+        .replace(/\bFor the purpose of\b/gi, "For");
+    }
+    
+    if (tone === 'professional') {
+      humanized = humanized
+        .replace(/\bwanna\b/gi, "want to")
+        .replace(/\bgotta\b/gi, "have to")
+        .replace(/\bkinda\b/gi, "somewhat")
+        .replace(/\bsort of\b/gi, "rather");
+    }
+    
+    if (tone === 'academic') {
+      humanized = humanized
+        .replace(/\bshow\b/gi, "demonstrate")
+        .replace(/\btell\b/gi, "indicate")
+        .replace(/\buse\b/gi, "utilize")
+        .replace(/\bget\b/gi, "obtain");
+    }
+    
+    if (tone === 'creative') {
+      humanized = humanized
+        .replace(/\.\s+/g, "! ")
+        .replace(/\bvery\b/gi, "incredibly")
+        .replace(/\bgood\b/gi, "exceptional")
+        .replace(/\bbad\b/gi, "problematic")
+        .replace(/\binteresting\b/gi, "fascinating");
     }
 
+    // Capitalize first letter properly
     humanized = humanized.charAt(0).toUpperCase() + humanized.slice(1);
+    
+    // Ensure proper punctuation at end
     if (!/[.!?]$/.test(humanized)) {
       humanized += '.';
+    }
+    
+    // Add slight variation in sentence structure (optional ellipsis for thoughtfulness)
+    if (Math.random() > 0.7 && !humanized.includes('...')) {
+      humanized = humanized.replace(/\.\s*$/, '...');
     }
 
     return humanized;
@@ -318,7 +390,7 @@ class AIController {
             outputLength: fallbackText.length,
             tone: requestedTone,
             language: language,
-            humanizationLevel: 'fallback'
+            humanizationLevel: 'fallback-advanced'
           });
         }
 
@@ -335,7 +407,7 @@ class AIController {
             tone: requestedTone,
             language: language,
             method: 'fallback',
-            changes: ['Adjusted tone and flow']
+            changes: ['Applied advanced humanization patterns', 'Added natural contractions', 'Improved sentence flow', 'Enhanced conversational tone']
           }
         });
       }

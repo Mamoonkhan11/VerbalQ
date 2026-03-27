@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,6 +11,9 @@ import { Progress } from "@/components/ui/progress"
 import { Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useFormDataRetention } from "@/hooks/use-form-data-retention"
+import { useAuth } from "@/lib/auth-context"
+import { useGuestUsage } from "@/hooks/use-guest-usage"
+import { SignupLimitModal } from "@/components/SignupLimitModal"
 import api from "@/lib/api"
 
 interface AIDetectionFormData {
@@ -24,8 +28,11 @@ interface AIDetectionResult {
   confidence: string
 }
 
-export default function AIDetectorPage() {
+export default function GuestAIDetectorPage() {
+  const router = useRouter()
   const { toast } = useToast()
+  const { user, limitReached, incrementUsage } = useAuth()
+  const { usageCount, remainingUses, incrementUsage: incrementGuestUsage, identifier } = useGuestUsage()
   const { saveFormData, getFormData } = useFormDataRetention()
   const abortControllerRef = useRef<AbortController | null>(null)
   const [inputText, setInputText] = useState("")
@@ -33,9 +40,27 @@ export default function AIDetectorPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState("en")
   const [isClient, setIsClient] = useState(false)
+  const [showLimitModal, setShowLimitModal] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
+  }, [])
+
+  // Redirect to dashboard if user is logged in
+  useEffect(() => {
+    if (user) {
+      router.push("/dashboard/ai-detector")
+    }
+  }, [user, router])
+
+  // Listen for guest limit reached event
+  useEffect(() => {
+    const handleLimitReached = () => {
+      setShowLimitModal(true)
+    }
+
+    window.addEventListener('guest-limit-reached', handleLimitReached)
+    return () => window.removeEventListener('guest-limit-reached', handleLimitReached)
   }, [])
 
   // Restore form data if available
@@ -78,6 +103,12 @@ export default function AIDetectorPage() {
       return
     }
 
+    // Check if guest limit reached
+    if (remainingUses <= 0) {
+      setShowLimitModal(true)
+      return
+    }
+
     setIsLoading(true)
     setResult(null)
 
@@ -90,10 +121,16 @@ export default function AIDetectorPage() {
     abortControllerRef.current = new AbortController()
 
     try {
+      // Use identifier from hook (guaranteed to exist after initialization)
+      const guestIdentifier = identifier || 'unknown'
+
       const response = await api.post("/api/ai/ai-detect", {
         text: inputText,
         language: selectedLanguage,
       }, {
+        headers: {
+          'X-Device-Fingerprint': guestIdentifier
+        },
         signal: abortControllerRef.current.signal
       })
       const data = response.data
@@ -115,6 +152,9 @@ export default function AIDetectorPage() {
           confidence: data.confidence
         }
       })
+
+      // Increment usage counter
+      incrementGuestUsage()
 
       toast({
         title: "AI detection completed",
@@ -318,6 +358,13 @@ export default function AIDetectorPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Limit Modal */}
+      <SignupLimitModal 
+        open={showLimitModal || (limitReached && !user)} 
+        onOpenChange={setShowLimitModal}
+        usageCount={usageCount}
+      />
     </div>
   )
 }

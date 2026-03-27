@@ -45,4 +45,11 @@ router.get('/settings', auth, adminOnly, adminSettingsController.getSettings);
  */
 router.put('/settings', auth, adminOnly, adminSettingsController.updateSettings);
 
+/**
+ * @route   GET /api/admin/feedback
+ * @desc    Get all feedback messages
+ * @access  Private (admin only)
+ */
+router.get('/feedback', auth, adminOnly, adminController.getFeedback);
+
 module.exports = router;
