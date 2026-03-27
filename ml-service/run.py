@@ -8,7 +8,7 @@ if __name__ == "__main__":
     
     # Render provides a 'PORT' environment variable. 
     # We use that, or default to 8001 if running locally.
-    port = int(os.environ.get("PORT", 8001))
+    port = int(os.environ.get("PORT", 8000))
     
     # Log startup information for debugging
     print(f"🚀 Starting ML Service on host=0.0.0.0 port={port}")
