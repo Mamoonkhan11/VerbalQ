@@ -174,26 +174,46 @@ class AIController {
       });
 
     } catch (error) {
-      console.error('Grammar check error:', error.message);
+      // Log the full error details for debugging
+      console.error('ML Service Error:', error.response?.data || error.message);
+      console.error('Error details:', {
+        status: error.status,
+        data: error.data,
+        message: error.message,
+        code: error.code
+      });
 
       // Handle specific ML service errors
-      if (error.status) {
-        // ML service unavailable
-        if (error.status === 503) {
-          return res.status(503).json({
-            success: false,
-            message: 'Grammar service unavailable'
-          });
-        }
+      if (error.status === 503) {
+        console.warn('⚠️  ML Service is currently down or unreachable');
+        return res.status(503).json({
+          success: false,
+          error: 'ML_SERVICE_UNAVAILABLE',
+          message: 'ML Service is currently initializing, please try again in 30 seconds.'
+        });
+      }
 
+      if (error.status) {
+        const errorData = error.data?.detail || {};
         return res.status(error.status).json({
           success: false,
-          error: error.data?.detail?.error || 'GRAMMAR_ERROR',
+          error: errorData.error || 'TRANSLATION_ERROR',
           message: error.message
         });
       }
 
+      // Network errors or other connection issues
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        console.error('❌ Cannot connect to ML Service - Connection refused or not found');
+        return res.status(503).json({
+          success: false,
+          error: 'ML_SERVICE_UNREACHABLE',
+          message: 'ML Service is currently initializing, please try again in 30 seconds.'
+        });
+      }
+
       // Return generic error for other issues
+      console.error('❌ Unexpected grammar check error:', error);
       return res.status(500).json({
         success: false,
         message: 'An error occurred while processing your request.'
