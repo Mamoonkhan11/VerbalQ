@@ -16,6 +16,36 @@ const errorHandler = require('./middleware/errorHandler');
 // Create Express app
 const app = express();
 
+// ==========================================
+// CORS MIDDLEWARE - MUST BE FIRST
+// ==========================================
+const frontendOrigin = 'https://verbalqii.netlify.app';
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    const isLocalDevOrigin = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin);
+
+    // Allow specific origins for production and local development
+    if (origin === frontendOrigin || isLocalDevOrigin) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Fingerprint']
+}));
+
+// Handle preflight requests for all routes
+app.options('*', cors());
+
+// ==========================================
+// SECURITY MIDDLEWARE
+// ==========================================
+
 // Security middleware - comprehensive security headers
 app.use(helmet({
   contentSecurityPolicy: {
@@ -35,28 +65,6 @@ app.use(helmet({
 
 // Remove X-Powered-By header for security
 app.disable('x-powered-by');
-
-// CORS configuration with restricted origins
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : ['http://localhost:3000', 'http://localhost:3001'];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-
-    const isLocalDevOrigin = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?$/.test(origin);
-
-    if (allowedOrigins.includes(origin) || (process.env.NODE_ENV === 'development' && isLocalDevOrigin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-Fingerprint']
-}));
 
 // Request logging - clean and readable format
 if (process.env.NODE_ENV === 'development') {

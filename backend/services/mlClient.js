@@ -18,11 +18,16 @@ const axios = require('axios');
 class MLClient {
   constructor() {
     // Get ML service URL from environment variables
-    this.baseURL = process.env.ML_SERVICE_URL;
+    let mlServiceUrl = process.env.ML_SERVICE_URL;
 
-    if (!this.baseURL) {
+    if (!mlServiceUrl) {
       throw new Error('ML_SERVICE_URL environment variable is not set');
     }
+
+    // Remove trailing slashes for consistency
+    this.baseURL = mlServiceUrl.replace(/\/$/, "");
+
+    console.log(`🤖 ML Client initialized with base URL: ${this.baseURL}`);
 
     // Create Axios instance with ML service configuration
     this.client = axios.create({

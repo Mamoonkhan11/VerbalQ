@@ -133,6 +133,10 @@ class AIController {
     try {
       // Get ML client instance
       const mlClient = getMLClient();
+      
+      // Log the ML service URL for debugging
+      const mlUrl = process.env.ML_SERVICE_URL.replace(/\/$/, "");
+      console.log(`📡 Forwarding grammar check request to: ${mlUrl}/grammar/check`);
 
       // Call ML service through client
       const mlData = await mlClient.grammarCheck({
